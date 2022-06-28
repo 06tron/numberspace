@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!-- Author: Matthew Richardson -->
+<html>
+<head>
+	<title>Number Space</title>
+	<script src="ns_polygons.js"></script>
+	<script src="ns_functions.js"></script>
+	<script>
+
+		function onLoad() {
+
+			const canvas = document.getElementById("ns_canvas");
+			const context = canvas.getContext("2d");
+
+			canvas.width = innerWidth;
+			canvas.height = innerHeight;
+
+			let mouseX = canvas.width / 2;
+			let mouseY = canvas.height / 2;
+
+			canvas.onmousemove = function(event) {
+				mouseX = event.clientX;
+				mouseY = event.clientY;
+			};
+
+			let tile1 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit1 });
+			let tile4 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit4 });
+			let tile7 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit7 });
+			tile1.linkTo(tile4, getOri(0), getDir(0), true);
+			tile1.linkTo(tile7, getOri(0), getDir(2), true);
+			tile4.linkTo(tile7, getOri(5), getDir(2), true);
+			tile7.linkTo(tile1, getOri(0), getDir(2), false);
+			//tile1.linkTo(tile7, getOri(0), getDir(3), false);
+
+			let origin = { x: 0, y: 0 };
+			let xAxis = { p1: origin, p2: { x: 1, y: 0 } };
+			let yAxis = { p1: origin, p2: { x: 0, y: 1 } };
+			let sl = 100;
+
+			// drawTileTree: (root: Tile, left: Line, right: Line)
+			function drawTileTree(tlx, tly, root, left, right, depth) {
+				root.draw(tlx, tly, left, right, sl);
+				let walk = root.walkTo(getDir(0));
+				if (depth > 0 && walk.isPossible) {
+					drawTileTree(tlx + sl, tly, walk.nextPlate(), { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, right, depth - 1);
+				}
+				walk = root.walkTo(getDir(2));
+				if (depth > 0 && walk.isPossible) {
+					drawTileTree(tlx, tly + sl, walk.nextPlate(), left, { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, depth - 1);
+				}
+			}
+
+			function drawScene() {
+				drawTileTree(0, 0, tile1, yAxis, xAxis, 10);
+			}
+
+			(function animate() {
+				context.clearRect(0, 0, canvas.width, canvas.height)
+				drawScene();
+				// requestAnimationFrame(animate);
+			})();
+
+		}
+
+	</script>
+</head>
+<body onload="onLoad()">
+	<canvas id="ns_canvas"></canvas>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+	</style>
+</body> 
+</html>
