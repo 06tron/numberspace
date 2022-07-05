@@ -99,8 +99,8 @@ function fourPointIntersection(a1, a2, b1, b2) {
  * 
  * 
  * @typedef SquareSymmetry
- * @property {boolean} negativeX
- * @property {boolean} negativeY
+ * @property {boolean} negativeH
+ * @property {boolean} negativeV
  * @property {boolean} verticalX
  * @property {() => number} index
  * @property {(c: Cardinal) => SquareSymmetry} asRelation
@@ -119,7 +119,7 @@ function cardinal(negC, verC) {
 		isNegative: negC,
 		isVertical: verC,
 		opposite: () => cardinal(!negC, verC),
-		transferTo: s => cardinal(((s.verticalX != verC) ? s.negativeY : s.negativeX) != negC, verC != s.verticalX),
+		transferTo: s => cardinal(negC != (verC ? s.negativeV : s.negativeH), verC != s.verticalX),
 		index: () => negC + (verC * 2),
 		toString: () => verC ? negC ? "/\\" : "\\/" : negC ? "<-" : "->"
 	};
@@ -132,33 +132,17 @@ function getDir(i) {
 
 /**
  * 
- * @param {*} negX
- * @param {*} negY
+ * @param {*} negH
+ * @param {*} negV
  * @param {*} verX
  * @returns {SquareSymmetry}
  */
-function square(negX, negY, verX) {
+function square(negH, negV, verX) {
 	return {
-		negativeX: negX,
-		negativeY: negY,
+		negativeH: negH,
+		negativeV: negV,
 		verticalX: verX,
-		asRelation: c => square(negX != c.isVertical, negY != c.isVertical, verX),
-		applyRelation: (r, c) => square(negX != c.isVertical != r.negativeX, negY != c.isVertical != r.negativeY, verX != r.verticalX),
-		index: () => negX + (negY * 2) + (verX * 4),
-		toString: function() {
-			let top = [0, verX ? 2 : 1];
-			let bot = [verX ? 1 : 2, 3];
-			if (verX ? negY : negX) {
-				top.reverse();
-				bot.reverse();
-			}
-			if (verX ? negX : negY) {
-				let temp = top;
-				top = bot;
-				bot = temp;
-			}
-			return top + '\n' + bot;
-		}
+		toString: () => (negH + (negV * 2) + (verX * 4)).toString()
 	};
 }
 
@@ -191,13 +175,13 @@ function getOri(i) {
  * 	corresponding point in the output square
  */
  function getUpdater(topLeft, sideLength, orient) {
-	const updateX = orient.negativeX ? (n => 1 - n) : (n => n);
-	const updateY = orient.negativeY ? (n => 1 - n) : (n => n);
+	const updateX = orient.negativeH ? (n => 1 - n) : (n => n);
+	const updateY = orient.negativeV ? (n => 1 - n) : (n => n);
 	if (orient.verticalX)  {
 		return function updater(xCoord, yCoord) {
 			return {
-				x: sideLength * updateY(yCoord) + topLeft.x,
-				y: sideLength * updateX(xCoord) + topLeft.y,
+				x: sideLength * updateX(yCoord) + topLeft.x,
+				y: sideLength * updateY(xCoord) + topLeft.y,
 				outL: false, outR: false
 			}
 		}
@@ -296,12 +280,11 @@ function drawPolygon(plg, leftEdge, rightEdge, updater, context) {
  */
 function createTile(context, baseFillStyle, ...polygons) {
 	polygons.unshift({ fillStyle: baseFillStyle, verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0] });
-	const neighbors = new Array(4).fill({ isEmpty: true, color: 'white' });
-	const relations = new Array(4).fill(undefined);
-	let orient = square(false, false, false);
+	const neighbors = new Array(4).fill({ isEmpty: true, color: "white" });
+	const relations = new Array(4).fill({ toString: () => "no relation" });
 	return {
 		// draw: (tlx: number, tly: number, left: Line, right: Line, s: number) => undefined
-		draw: function(tlx, tly, left, right, sideLength) {
+		draw: function(tlx, tly, left, right, sideLength, orient) {
 			let updater = getUpdater({ x: tlx, y: tly }, sideLength, orient);
 			polygons.forEach(p => drawPolygon(p, left, right, updater, context));
 		},
@@ -311,41 +294,90 @@ function createTile(context, baseFillStyle, ...polygons) {
 			return this;
 		},
 		isEmpty: false,
-		getOrient: () => orient,
-		setOrient: function(s) {
-			orient = s;
-			return this;
-		},
-		neighborArray: neighbors,
-		relationArray: relations,
-		walkTo: function(direct) {
-			let i = direct.transferTo(orient).index();
-			return {
-				isPossible: !neighbors[i].isEmpty,
-				nextPlate: () => neighbors[i].setOrient(orient.applyRelation(relations[i], direct))
-			}
-		},
+		nei: neighbors,
+		rel: relations,
 		linkTo: function(target, ori, direct, bothWays) {
 			let i = direct.index();
 			neighbors[i] = target;
-			relations[i] = ori.asRelation(direct);
+			relations[i] = ori;
 			if (bothWays) {
 				let dir = direct.opposite().transferTo(ori);
-				if (ori.index() == 5) {
-					ori = getOri(6);
-				} else if (ori.index() == 6) {
-					ori = getOri(5);
+				if (ori.verticalX && ori.negativeH != ori.negativeV) {
+					ori = square(ori.negativeV, ori.negativeH, ori.verticalX);
 				}
-				console.log(ori.toString() + " " + dir.toString());
 				target.linkTo(this, ori, dir, false);
 			}
-		}
+		},
+		toString: () => baseFillStyle.toString()
 	}
 }
 
+function startWalk(tile, orient) {
+	return {
+		canContinue: () => !tile.isEmpty,
+		to: function(direct) {
+			let i = direct.transferTo(orient).index();
+			orient = takeStep(orient, tile.rel[i]);
+			tile = tile.nei[i];
+			return this;
+		},
+		jumpTo: function(t, o) {
+			tile = t;
+			orient = o;
+			return this;
+		},
+		currTile: () => tile,
+		currOri: () => orient
+	}
+}
+
+function takeStep(ori, rel) {
+	return (ori.verticalX && rel.negativeH != rel.negativeV)
+		? square(ori.negativeH == rel.negativeH, ori.negativeV == rel.negativeV, ori.verticalX != rel.verticalX)
+		: square(ori.negativeH != rel.negativeH, ori.negativeV != rel.negativeV, ori.verticalX != rel.verticalX);
+}
+
+/* use 'Cmd'+'/' here to toggle testing
+
 (function main() {
-	let tile1 = createTile(null, "");
-	let tile2 = createTile(null, "");
-	tile1.linkTo(tile2, getOri(6), getDir(1), true);
 	console.log(main);
-})//();
+	test_transferTo();
+	let abc = ["A", "B", "C"].map(x => createTile(null, x));
+	test_linkTo(abc);
+	test_walkTo(abc);
+})();
+
+function test_transferTo() {
+	console.assert(getDir(1).transferTo(getOri(0)).toString() == "<-", "\"<-\" transfered to ori[0] should be \"<-\"");
+	console.assert(getDir(2).transferTo(getOri(4)).toString() == "->", "\"\\/\" transfered to ori[4] should be \"->\"");
+	console.assert(getDir(0).transferTo(getOri(6)).toString() == "\\/", "\"->\" transfered to ori[6] should be \"\\/\"");
+	console.assert(getDir(3).transferTo(getOri(2)).toString() == "\\/", "\"/\\\" transfered to ori[2] should be \"\\/\"");
+}
+
+function test_linkTo(abc) {
+	abc[0].linkTo(abc[1], getOri(0), getDir(0), true);
+	abc[0].linkTo(abc[1], getOri(6), getDir(2), true);
+	abc[2].linkTo(abc[0], getOri(2), getDir(3), true);
+	abc[1].linkTo(abc[2], getOri(0), getDir(3), true);
+	abc[2].linkTo(abc[0], getOri(0), getDir(0), true);
+	abc[1].linkTo(abc[1], getOri(2), getDir(2), false);
+	abc[2].linkTo(abc[0], getOri(1), getDir(1), false);
+	console.assert(abc[1].rel[1].toString() == "0", "B's \"<-\" relation should be ori[0]");
+	console.assert(abc[1].rel[0].toString() == "5", "B's \"->\" relation should be ori[5]");
+	console.assert(abc[0].rel[3].toString() == "2", "B's \"/\\\" relation should be ori[2]");
+	console.assert(abc[0].nei.map(x => x.toString()).join() == "B,C,B,C", "A's neigbor array should be [B, C, B, C]");
+	console.assert(abc[1].nei.map(x => x.toString()).join() == "A,A,B,C", "B's neigbor array should be [A, A, B, C]");
+	console.assert(abc[2].nei.map(x => x.toString()).join() == "A,A,B,A", "C's neigbor array should be [A, A, B, A]");
+}
+
+function test_walkTo(abc) {
+	let walk = startWalk(abc[0], getOri(0));
+	let seq = [1, 2, 0, 3];
+	for (let i = 0; i < 6; ++i) {
+		walk.to(getDir(seq[i % 4]));
+	}
+	console.assert(walk.currTile().toString() + walk.currOri().toString() == "A3",
+		"Start at A in ori[0] and return to A in ori[3] after moving left, down, right, up, left, down");
+}
+
+// */

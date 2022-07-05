@@ -23,12 +23,12 @@
 				mouseY = event.clientY;
 			};
 
-			let tile1 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit1 });
-			let tile4 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit4 });
+			let tile1 = createTile(context, "green", { fillStyle: "black", verts: digit1 });
+			let tile4 = createTile(context, "red", { fillStyle: "black", verts: digit4 });
 			let tile7 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit7 });
 			tile1.linkTo(tile4, getOri(0), getDir(0), true);
 			tile1.linkTo(tile7, getOri(0), getDir(2), true);
-			tile4.linkTo(tile7, getOri(5), getDir(2), true);
+			tile4.linkTo(tile7, getOri(6), getDir(2), true);
 			tile7.linkTo(tile1, getOri(0), getDir(2), false);
 			//tile1.linkTo(tile7, getOri(0), getDir(3), false);
 
@@ -37,21 +37,25 @@
 			let yAxis = { p1: origin, p2: { x: 0, y: 1 } };
 			let sl = 100;
 
-			// drawTileTree: (root: Tile, left: Line, right: Line)
-			function drawTileTree(tlx, tly, root, left, right, depth) {
-				root.draw(tlx, tly, left, right, sl);
-				let walk = root.walkTo(getDir(0));
-				if (depth > 0 && walk.isPossible) {
-					drawTileTree(tlx + sl, tly, walk.nextPlate(), { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, right, depth - 1);
+			// drawTileTree: (walk, tlx, tly, left, right, depth)
+			function drawTileTree(walk, tlx, tly, left, right, depth) {
+				let tile = walk.currTile();
+				let orient = walk.currOri();
+				tile.draw(tlx, tly, left, right, sl, orient);
+				walk.to(getDir(0));
+				if (depth > 0 && walk.canContinue()) {
+					drawTileTree(walk, tlx + sl, tly, { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, right, depth - 1);
 				}
-				walk = root.walkTo(getDir(2));
-				if (depth > 0 && walk.isPossible) {
-					drawTileTree(tlx, tly + sl, walk.nextPlate(), left, { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, depth - 1);
+				walk.jumpTo(tile, orient);
+				walk.to(getDir(2));
+				if (depth > 0 && walk.canContinue()) {
+					drawTileTree(walk, tlx, tly + sl, left, { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, depth - 1);
 				}
 			}
 
 			function drawScene() {
-				drawTileTree(0, 0, tile1, yAxis, xAxis, 10);
+				let walk = startWalk(tile1, getOri(0));
+				drawTileTree(walk, 0, 0, yAxis, xAxis, 10);
 			}
 
 			(function animate() {
