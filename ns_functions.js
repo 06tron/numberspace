@@ -1,3 +1,6 @@
+// /* Non-essential global variable, edited in index.html
+let debugMode = false; // (used in drawPolygon) */
+
 /**
  * A point on the xy-plane
  * 
@@ -9,13 +12,12 @@
  */
 
 /**
- * A non-vertical line defined by its slope and the coordinates of any point on the line. The equation
- * 	of the line is y = (x - pointX) / slopeInverse + pointY
+ * A line defined by a pair of two-dimensional points. The equation of the line is:
+ *  y = (x - a.x) * (b.y - a.y) / (b.x - a.x) + a.y
  * 
- * @typedef PointSlopeLine
- * @property {number} pointX - The x-coordinate of a point on this line
- * @property {number} pointY - The y-coordinate of a point on this line
- * @property {number} slopeInverse - The reciprocal of this line's slope
+ * @typedef TwoPointLine
+ * @property {Point} a - A point on this line, not equal to 'b'
+ * @property {Point} b - A point on this line, not equal to 'a'
  */
 
 /**
@@ -23,12 +25,11 @@
  * 	x-coordinate is less than the x-value of the given line at the same y-value
  * 
  * @param {Point} point - The point to be compared with a given line
- * @param {PointSlopeLine} line - The line to be compared with a given point
+ * @param {TwoPointLine} line - The line to be compared with a given point
  * @returns {boolean} True if the given point is to the left of the given line, and false otherwise
  */
 function leftOfLine(point, line) {
-	return point.x < ((line.p2.x - line.p1.x) / (line.p2.y - line.p1.y)) * (point.y - line.p1.y) + line.p1.x;
-	// return point.x < line.slopeInverse * (point.y - line.pointY) + line.pointX;
+	return point.x < (point.y - line.a.y) * (line.b.x - line.a.x) / (line.b.y - line.a.y) + line.a.x;
 }
 
 /**
@@ -36,38 +37,29 @@ function leftOfLine(point, line) {
  * 	x-coordinate is greater than the x-value of the given line at the same y-value
  * 
  * @param {Point} point - The point to be compared with a given line
- * @param {PointSlopeLine} line - The line to be compared with a given point
+ * @param {TwoPointLine} line - The line to be compared with a given point
  * @returns {boolean} True if the given point is to the right of the given line, and false otherwise
  */
 function rightOfLine(point, line) {
-	return point.x > ((line.p2.x - line.p1.x) / (line.p2.y - line.p1.y)) * (point.y - line.p1.y) + line.p1.x;
-	// return point.x > line.slopeInverse * (point.y - line.pointY) + line.pointX;
+	return point.x > (point.y - line.a.y) * (line.b.x - line.a.x) / (line.b.y - line.a.y) + line.a.x;
 }
 
 /**
- * Finds the intersection point of two lines. One is an extention of the line segment between two given
- * 	points, and the other is given
+ * Finds the intersection point of two lines. One line is given, and the other is the extention of the
+ *  line segment between two given points
  * 
- * @param {Point} p1 - The first of the two points which define the first line
- * @param {Point} p2 - The second of the two points which define the first line
- * @param {PointSlopeLine} line - The second line, given in point-slope form
+ * @param {Point} a - The first of the two points which define the first line
+ * @param {Point} b - The second of the two points which define the first line
+ * @param {TwoPointLine} line - The second line, given in two-point form
  * @returns {Point} The 2D point of intersection
  */
-function lineIntersectSegment(p1, p2, line) {
-	return fourPointIntersection(p1, p2, line.p1, line.p2);
-	// let isectX = p1.x * (line.slopeInverse * (p2.y - line.pointY) + line.pointX);
-	// isectX -= p2.x * (line.slopeInverse * (p1.y - line.pointY) + line.pointX);
-	// isectX /= p1.x + line.slopeInverse * (p2.y - p1.y) - p2.x;
-	// return { x: isectX, y: (isectX - line.pointX) / line.slopeInverse + line.pointY };
-}
-
-function fourPointIntersection(a1, a2, b1, b2) {
-	const n1 = (a1.x * a2.y) - (a1.y * a2.x);
-	const n2 = (b1.x * b2.y) - (b1.y * b2.x);
-	const n3 = (a1.x - a2.x) * (b1.y - b2.y) - (a1.y - a2.y) * (b1.x - b2.x);
+function lineIntersectSegment(a, b, line) {
+	const n1 = a.x * b.y - a.y * b.x;
+	const n2 = line.a.x * line.b.y - line.a.y * line.b.x;
+	const n3 = (a.x - b.x) * (line.a.y - line.b.y) - (a.y - b.y) * (line.a.x - line.b.x);
 	return {
-		x: (n1 * (b1.x - b2.x) - (a1.x - a2.x) * n2) / n3,
-		y: (n1 * (b1.y - b2.y) - (a1.y - a2.y) * n2) / n3
+		x: (n1 * (line.a.x - line.b.x) - (a.x - b.x) * n2) / n3,
+		y: (n1 * (line.a.y - line.b.y) - (a.y - b.y) * n2) / n3
 	};
 }
 
@@ -81,7 +73,40 @@ function fourPointIntersection(a1, a2, b1, b2) {
  * 	2D point coordinates in the form [x0, y0, x1, y1, x2, y2...]
  */
 
-// TODO commenting below this point
+/**
+ * 
+ * 
+ * @typedef SquareSymmetry
+ * @property {boolean} negativeH
+ * @property {boolean} negativeV
+ * @property {boolean} verticalX
+ * @property {() => string} toString
+ */
+
+/**
+ * 
+ * @param {boolean} negH
+ * @param {boolean} negV
+ * @param {boolean} verX
+ * @returns {SquareSymmetry}
+ */
+ function square(negH, negV, verX) {
+	return {
+		negativeH: negH,
+		negativeV: negV,
+		verticalX: verX,
+		toString: () => (negH + (negV * 2) + (verX * 4)).toString()
+	};
+}
+
+/**
+ * 
+ * @param {number} i - A non-negative integer
+ * @returns {SquareSymmetry}
+ */
+function getOri(i) {
+	return square(i % 2 > 0, i % 4 > 1, i % 8 > 3); 
+}
 
 /**
  * 
@@ -98,58 +123,28 @@ function fourPointIntersection(a1, a2, b1, b2) {
 /**
  * 
  * 
- * @typedef SquareSymmetry
- * @property {boolean} negativeH
- * @property {boolean} negativeV
- * @property {boolean} verticalX
- * @property {() => number} index
- * @property {(c: Cardinal) => SquareSymmetry} asRelation
- * @property {(r: SquareSymmetry, c: Cardinal) => SquareSymmetry} applyRelation
- * @property {() => string} toString
- */
-
-/**
- * WORKING
- * @param {*} negC 
- * @param {*} verC 
+ * @param {boolean} negC 
+ * @param {boolean} verC 
  * @returns {Cardinal}
  */
 function cardinal(negC, verC) {
 	return {
 		isNegative: negC,
 		isVertical: verC,
+		index: () => negC + (verC * 2),
 		opposite: () => cardinal(!negC, verC),
 		transferTo: s => cardinal(negC != (verC ? s.negativeV : s.negativeH), verC != s.verticalX),
-		index: () => negC + (verC * 2),
 		toString: () => verC ? negC ? "/\\" : "\\/" : negC ? "<-" : "->"
 	};
 }
 
-function getDir(i) {
-	// ->, <-, \/, /\
-	return cardinal(i % 2 > 0, i % 4 > 1); 
-}
-
 /**
- * 
- * @param {*} negH
- * @param {*} negV
- * @param {*} verX
- * @returns {SquareSymmetry}
+ * ->, <-, \/, /\
+ * @param {number} i - A non-negative integer
+ * @returns {Cardinal}
  */
-function square(negH, negV, verX) {
-	return {
-		negativeH: negH,
-		negativeV: negV,
-		verticalX: verX,
-		toString: () => (negH + (negV * 2) + (verX * 4)).toString()
-	};
-}
-
-function getOri(i) {
-	// 0 1  1 0  2 3  3 2  0 2  1 3  2 0  3 1
-	// 2 3, 3 2, 0 1, 1 0, 1 3, 0 2, 3 1, 2 0
-	return square(i % 2 > 0, i % 4 > 1, i % 8 > 3); 
+function getDir(i) {
+	return cardinal(i % 2 > 0, i % 4 > 1); 
 }
 
 /**
@@ -183,74 +178,74 @@ function getOri(i) {
 				x: sideLength * updateX(yCoord) + topLeft.x,
 				y: sideLength * updateY(xCoord) + topLeft.y,
 				outL: false, outR: false
-			}
-		}
+			};
+		};
 	} else {
 		return function updater(xCoord, yCoord) {
 			return {
 				x: sideLength * updateX(xCoord) + topLeft.x,
 				y: sideLength * updateY(yCoord) + topLeft.y,
 				outL: false, outR: false
-			}
-		}
+			};
+		};
 	}
 }
 
 /**
  * 
  * @param {VertexArrayPolygon} plg - A template defining the shape of the polygon to be drawn
- * @param {PointSlopeLine} leftEdge - Cut off any part of the updated polygon left of this line
- * @param {PointSlopeLine} rightEdge - Cut off any part of the updated polygon right of this line
+ * @param {TwoPointLine} edgeL - Cut off any part of the updated polygon left of this line
+ * @param {TwoPointLine} edgeR - Cut off any part of the updated polygon right of this line
  * @param {PointUpdater} updater - A function to transform the template polygon's vertices
  * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides the 2D rendering
  * 	context for the drawing surface of a <canvas> element
  */
-function drawPolygon(plg, leftEdge, rightEdge, updater, context) {
+function drawPolygon(plg, edgeL, edgeR, updater, context) {
 	context.fillStyle = plg.fillStyle;
 	context.beginPath();
 	let p1 = updater(plg.verts[0], plg.verts[1]);
-	if (leftOfLine(p1, leftEdge)) {
+	if (leftOfLine(p1, edgeL)) {
 		p1.outL = true;
-		const isectL = lineIntersectSegment(p1, updater(plg.verts[2], plg.verts[3]), leftEdge);
+		const isectL = lineIntersectSegment(p1, updater(plg.verts[2], plg.verts[3]), edgeL);
 		context.moveTo(isectL.x, isectL.y);
-	} else if (rightOfLine(p1, rightEdge)) {
+	} else if (rightOfLine(p1, edgeR)) {
 		p1.outR = true;
-		const isectR = lineIntersectSegment(p1, updater(plg.verts[2], plg.verts[3]), rightEdge);
+		const isectR = lineIntersectSegment(p1, updater(plg.verts[2], plg.verts[3]), edgeR);
 		context.moveTo(isectR.x, isectR.y);
 	} else {
 		context.moveTo(p1.x, p1.y);
 	}
 	for (let i = 2; i < plg.verts.length; i += 2) {
 		const p2 = updater(plg.verts[i], plg.verts[i + 1]);
-		p2.outR = (p2.outL = leftOfLine(p2, leftEdge)) ? false : rightOfLine(p2, rightEdge);
+		p2.outR = (p2.outL = leftOfLine(p2, edgeL)) ? false : rightOfLine(p2, edgeR);
 		if (p1.outL) {
 			if (p2.outR) { // both out, on opposite sides				p1 \~~~\ p2
-				const isectL = lineIntersectSegment(p1, p2, leftEdge);
-				const isectR = lineIntersectSegment(p1, p2, rightEdge);
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
 				context.lineTo(isectL.x, isectL.y);
 				context.lineTo(isectR.x, isectR.y);
 			} else if (!p2.outL) { // p1 out and p2 in					p1 \~~~~~p2
-				const isectL = lineIntersectSegment(p1, p2, leftEdge);
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
 				context.lineTo(isectL.x, isectL.y);
 				context.lineTo(p2.x, p2.y);
 			} // else both out, on same side							p1 p2 \~~~~
 		} else if (p1.outR) {
 			if (p2.outL) { // both out, on opposite sides				p2 \~~~\ p1
-				const isectL = lineIntersectSegment(p1, p2, leftEdge);
-				const isectR = lineIntersectSegment(p1, p2, rightEdge);
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
 				context.lineTo(isectR.x, isectR.y);
 				context.lineTo(isectL.x, isectL.y);
 			} else if (!p2.outR) { // p1 out and p2 in					p2~~~~~\ p1
-				const isectR = lineIntersectSegment(p1, p2, rightEdge);
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
 				context.lineTo(isectR.x, isectR.y);
 				context.lineTo(p2.x, p2.y);
 			} // else both out, on same side							~~~~\ p2 p1
 		} else {
 			if (p2.outR) { // p1 in and p2 out							p1~~~~~\ p2
-				const isectR = lineIntersectSegment(p1, p2, rightEdge);
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
 				context.lineTo(isectR.x, isectR.y);
 			} else if (p2.outL) { // p1 in and p2 out					p2 \~~~~~p1
-				const isectL = lineIntersectSegment(p1, p2, leftEdge);
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
 				context.lineTo(isectL.x, isectL.y);
 			} else { // both in											p1~~~~~~~p2
 				context.lineTo(p2.x, p2.y);
@@ -259,17 +254,30 @@ function drawPolygon(plg, leftEdge, rightEdge, updater, context) {
 		p1 = p2;
 	}
 	context.fill("evenodd");
+	// /* Non-essential addition, makes it easier to see the borders between polygons
+	if (debugMode) {
+		context.stroke();
+	} // */
 	context.closePath();
 }
 
 /**
  * 
+ * 
  * @typedef Tile
- * TODO define the type
+ * @property {() => boolean} isEmpty
+ * @property {(target: Tile, ori: SquareSymmetry, dir: Cardinal,
+ *  andBack: boolean) => Tile} linkTo - Connects this tile to its new neigbor, and then returns this tile 
+ * @property {(updater: PointUpdater, edgeL: TwoPointLine, edgeR: TwoPointLine,
+ *  ctx: CanvasRenderingContext2D) => undefined} draw
+ * @property {(p: VertexArrayPolygon) => Tile} addPolygon
+ * @property {Tile[]} nei
+ * @property {SquareSymmetry[]} rel
+ * @property {() => string} toString
  */
 
 /**
- * TODO move context parameter to .draw function
+ * 
  * 
  * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides the 2D rendering
  * 	context for the drawing surface of a <canvas> element
@@ -278,50 +286,76 @@ function drawPolygon(plg, leftEdge, rightEdge, updater, context) {
  * @param {...VertexArrayPolygon} polygons 
  * @returns {Tile}
  */
-function createTile(context, baseFillStyle, ...polygons) {
+function createTile(baseFillStyle, ...polygons) {
 	polygons.unshift({ fillStyle: baseFillStyle, verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0] });
-	const neighbors = new Array(4).fill({ isEmpty: true, color: "white" });
-	const relations = new Array(4).fill({ toString: () => "no relation" });
+	const neighbors = new Array(4).fill({ isEmpty: () => true });
+	const relations = new Array(4).fill(undefined);
 	return {
-		// draw: (tlx: number, tly: number, left: Line, right: Line, s: number) => undefined
-		draw: function(tlx, tly, left, right, sideLength, orient) {
-			let updater = getUpdater({ x: tlx, y: tly }, sideLength, orient);
-			polygons.forEach(p => drawPolygon(p, left, right, updater, context));
-		},
-		// setPolygons: (plg: [Polygon]) => Tile
-		setPolygons: function(...plg) {
-			polygons = plg;
-			return this;
-		},
-		isEmpty: false,
-		nei: neighbors,
-		rel: relations,
-		linkTo: function(target, ori, direct, bothWays) {
-			let i = direct.index();
+		isEmpty: () => false,
+		linkTo: function(target, ori, dir, andBack) {
+			const i = dir.index();
 			neighbors[i] = target;
 			relations[i] = ori;
-			if (bothWays) {
-				let dir = direct.opposite().transferTo(ori);
+			if (andBack) {
+				let back = dir.opposite().transferTo(ori);
 				if (ori.verticalX && ori.negativeH != ori.negativeV) {
 					ori = square(ori.negativeV, ori.negativeH, ori.verticalX);
 				}
-				target.linkTo(this, ori, dir, false);
+				target.linkTo(this, ori, back, false);
 			}
+			return this;
 		},
+		draw: function(updater, edgeL, edgeR, ctx) {
+			polygons.forEach(p => drawPolygon(p, edgeL, edgeR, updater, ctx));
+		},
+		addPolygon: function(p) {
+			polygons.push(p);
+			return this;
+		},
+		nei: neighbors,
+		rel: relations,
 		toString: () => baseFillStyle.toString()
 	}
 }
 
+/**
+ * 
+ * @param {SquareSymmetry} ori 
+ * @param {SquareSymmetry} rel 
+ * @returns {SquareSymmetry}
+ */
+ function takeStep(ori, rel) {
+	return (ori.verticalX && rel.negativeH != rel.negativeV)
+		? square(ori.negativeH == rel.negativeH, ori.negativeV == rel.negativeV, ori.verticalX != rel.verticalX)
+		: square(ori.negativeH != rel.negativeH, ori.negativeV != rel.negativeV, ori.verticalX != rel.verticalX);
+}
+
+/**
+ * 
+ * @typedef Walk
+ * @property {() => boolean} canContinue
+ * @property {(direct: Cardinal) => Walk} to
+ * @property {(t: Tile, o: SquareSymmetry) => Walk} from
+ * @property {() => Tile} currTile
+ * @property {() => SquareSymmetry} currOri
+ */
+
+/**
+ * 
+ * @param {Tile} tile 
+ * @param {SquareSymmetry} orient 
+ * @returns {Walk}
+ */
 function startWalk(tile, orient) {
 	return {
-		canContinue: () => !tile.isEmpty,
+		canContinue: () => !tile.isEmpty(),
 		to: function(direct) {
-			let i = direct.transferTo(orient).index();
+			const i = direct.transferTo(orient).index();
 			orient = takeStep(orient, tile.rel[i]);
 			tile = tile.nei[i];
 			return this;
 		},
-		jumpTo: function(t, o) {
+		from: function(t, o) {
 			tile = t;
 			orient = o;
 			return this;
@@ -331,10 +365,84 @@ function startWalk(tile, orient) {
 	}
 }
 
-function takeStep(ori, rel) {
-	return (ori.verticalX && rel.negativeH != rel.negativeV)
-		? square(ori.negativeH == rel.negativeH, ori.negativeV == rel.negativeV, ori.verticalX != rel.verticalX)
-		: square(ori.negativeH != rel.negativeH, ori.negativeV != rel.negativeV, ori.verticalX != rel.verticalX);
+/**
+ * True if b is steeper / closer to y-axis
+ * 
+ * @param {TwoPointLine} f1 
+ * @param {TwoPointLine} f2 
+ * @returns {boolean}
+ */
+function compareSlope(f1, f2) {
+	return (f1.b.x - f1.a.x) * (f2.b.y - f2.a.y) < (f2.b.x - f2.a.x) * (f1.b.y - f1.a.y);
+}
+
+/**
+ * 
+ * @param {Tile} start
+ * @param {Point} pTL 
+ * @param {Point} origin 
+ * @param {number} len 
+ * @param {Point} quadSize 
+ * @param {CanvasRenderingContext2D} context
+ */
+function tileTree(start, pTL, origin, len, quadSize, context)  {
+	const pBR = { x: pTL.x + len, y: pTL.y + len };
+	const xTopPos = { a: pTL, b: { x: pTL.x + 1, y: pTL.y } };
+	const xTopNeg = { a: { x: pTL.x + 1, y: pTL.y }, b: pTL };
+	const yLefPos = { a: pTL, b: { x: pTL.x, y: pTL.y + 1 } };
+	const yLefNeg = { a: { x: pTL.x, y: pTL.y + 1 }, b: pTL };
+	const yRigPos = { a: pBR, b: { x: pBR.x, y: pBR.y + 1 } };
+	const yRigNeg = { a: { x: pBR.x, y: pBR.y + 1 }, b: pBR };
+	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir);
+	const axes = [yLefPos, xTopNeg, yLefNeg, xTopNeg, xTopPos, yRigPos, xTopPos, yRigNeg];
+	for (let i = 0; i < 4; ++i) {
+		const b = i > 1;
+		const r = i % 2 > 0; 
+
+		/**
+		 * (b * len) == (b ? len : 0)
+		 * 
+		 * @param {Walk} walk 
+		 * @param {number} cx 
+		 * @param {number} cy 
+		 * @param {TwoPointLine} edgeL 
+		 * @param {TwoPointLine} edgeR 
+		 * @param {number} xMax 
+		 * @param {number} yMax 
+		 */
+		function branch(walk, cx, cy, edgeL, edgeR, xMax, yMax) {
+			const tile = walk.currTile();
+			const orient = walk.currOri();
+			const newEdge = { a: origin, b: { x: cx + (r ? -len : len), y: cy + (b ? -len : len) } };
+			tile.draw(getUpdater({ x: cx - (r ? len : 0), y: cy - (b ? len : 0) }, len, orient), edgeL, edgeR, context);
+			// * Toggle here to draw the tree one tile at a time in the browser's debugger
+			// debugger; // * /
+			if (xMax > 0 && walk.to(directions[i]).canContinue()) {
+				const newLeft = (b != compareSlope(newEdge, edgeL)) ? edgeL : newEdge;
+				if (b != compareSlope(newLeft, edgeR)) {
+					branch(walk, cx + (r ? 0 : len), cy + (r ? b ? -len : len : 0), newLeft, edgeR, xMax - 1, yMax);
+				}
+			}
+			if (yMax > 0 && walk.from(tile, orient).to(directions[i + 4]).canContinue()) {
+				if (b != compareSlope(newEdge, edgeR)) {
+					edgeR = newEdge;
+				}
+				if (b != compareSlope(edgeL, edgeR)) {
+					branch(walk, cx - (r ? len : 0), cy + (r ? 0 : b ? -len : len), edgeL, edgeR, xMax, yMax - 1);
+				}
+			}
+		}
+
+		branch(
+			startWalk(start, getOri(0)),
+			pTL.x + (r ? len : 0),
+			pTL.y + (b ? len : 0),
+			axes[i],
+			axes[i + 4],
+			quadSize[r ? 'y' : 'x'],
+			quadSize[r ? 'x' : 'y']
+		);
+	}
 }
 
 /* use 'Cmd'+'/' here to toggle testing
@@ -342,7 +450,7 @@ function takeStep(ori, rel) {
 (function main() {
 	console.log(main);
 	test_transferTo();
-	let abc = ["A", "B", "C"].map(x => createTile(null, x));
+	const abc = ["A", "B", "C"].map(x => createTile(x));
 	test_linkTo(abc);
 	test_walkTo(abc);
 })();
@@ -371,8 +479,8 @@ function test_linkTo(abc) {
 }
 
 function test_walkTo(abc) {
-	let walk = startWalk(abc[0], getOri(0));
-	let seq = [1, 2, 0, 3];
+	const walk = startWalk(abc[0], getOri(0));
+	const seq = [1, 2, 0, 3];
 	for (let i = 0; i < 6; ++i) {
 		walk.to(getDir(seq[i % 4]));
 	}

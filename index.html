@@ -15,53 +15,76 @@
 			canvas.width = innerWidth;
 			canvas.height = innerHeight;
 
-			let mouseX = canvas.width / 2;
-			let mouseY = canvas.height / 2;
+			let mouseX = canvas.width / 2 + 50;
+			let mouseY = canvas.height / 2 + 50;
+			let prevX = mouseX;
+			let prevY = mouseY;
 
 			canvas.onmousemove = function(event) {
 				mouseX = event.clientX;
 				mouseY = event.clientY;
 			};
 
-			let tile1 = createTile(context, "green", { fillStyle: "black", verts: digit1 });
-			let tile4 = createTile(context, "red", { fillStyle: "black", verts: digit4 });
-			let tile7 = createTile(context, "lightsteelblue", { fillStyle: "black", verts: digit7 });
-			tile1.linkTo(tile4, getOri(0), getDir(0), true);
-			tile1.linkTo(tile7, getOri(0), getDir(2), true);
-			tile4.linkTo(tile7, getOri(6), getDir(2), true);
-			tile7.linkTo(tile1, getOri(0), getDir(2), false);
-			//tile1.linkTo(tile7, getOri(0), getDir(3), false);
+			canvas.onmousedown = function(event) {
+				debugMode = !debugMode;
+			};
 
-			let origin = { x: 0, y: 0 };
-			let xAxis = { p1: origin, p2: { x: 1, y: 0 } };
-			let yAxis = { p1: origin, p2: { x: 0, y: 1 } };
-			let sl = 100;
+			let tileG1 = createTile("green", { fillStyle: "black", verts: digit1 });
+			let tileR2 = createTile("red", { fillStyle: "black", verts: digit4 });
+			let tileL3 = createTile("lightsteelblue", { fillStyle: "black", verts: digit7 });
+			let tileB4 = createTile("blue", { fillStyle: "black", verts: digit1 });
+			let tileY5 = createTile("yellow", { fillStyle: "black", verts: digit4 });
+			let tileP6 = createTile("purple", { fillStyle: "black", verts: digit7 });
+			// let tileV = createTile("violet", { fillStyle: "black", verts: digit1 });
+			// let tileM = createTile("magenta", { fillStyle: "black", verts: digit4 });
+			// let tileT = createTile("turquoise", { fillStyle: "black", verts: digit7 });
+			tileG1.linkTo(tileR2, getOri(0), getDir(3), true);
+			tileG1.linkTo(tileY5, getOri(0), getDir(2), true);
+			tileG1.linkTo(tileL3, getOri(5), getDir(0), true);
+			tileG1.linkTo(tileB4, getOri(5), getDir(1), true);
+			tileP6.linkTo(tileL3, getOri(3), getDir(3), true);
+			tileP6.linkTo(tileB4, getOri(3), getDir(2), true);
+			tileP6.linkTo(tileR2, getOri(6), getDir(0), true);
+			tileP6.linkTo(tileY5, getOri(6), getDir(1), true);
+			tileY5.linkTo(tileL3, getOri(3), getDir(0), false);
+			tileL3.linkTo(tileY5, getOri(3), getDir(0), false);
+			tileY5.linkTo(tileB4, getOri(0), getDir(1), false);
+			tileB4.linkTo(tileY5, getOri(0), getDir(0), false);
+			tileR2.linkTo(tileL3, getOri(0), getDir(0), true);
+			tileR2.linkTo(tileB4, getOri(3), getDir(1), false);
+			tileB4.linkTo(tileR2, getOri(3), getDir(1), false);
+			// tileR.isEmpty = () => true;
 
-			// drawTileTree: (walk, tlx, tly, left, right, depth)
-			function drawTileTree(walk, tlx, tly, left, right, depth) {
-				let tile = walk.currTile();
-				let orient = walk.currOri();
-				tile.draw(tlx, tly, left, right, sl, orient);
-				walk.to(getDir(0));
-				if (depth > 0 && walk.canContinue()) {
-					drawTileTree(walk, tlx + sl, tly, { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, right, depth - 1);
-				}
-				walk.jumpTo(tile, orient);
-				walk.to(getDir(2));
-				if (depth > 0 && walk.canContinue()) {
-					drawTileTree(walk, tlx, tly + sl, left, { p1: origin, p2: { x: tlx + sl, y: tly + sl } }, depth - 1);
-				}
-			}
+			// game starts with single tile visible in the center of the the screen
+			// once the mouse is within that tile, draw the tile tree (reveal the tree edges with expanding circle)
+			// function to detect when mouse leaves current square
+			// should mouse have max speed? could it skip around when moving too quickly?
 
 			function drawScene() {
-				let walk = startWalk(tile1, getOri(0));
-				drawTileTree(walk, 0, 0, yAxis, xAxis, 10);
+				tileTree(tileR2, { x: canvas.width / 2, y: canvas.height / 2 }, { x: mouseX, y: mouseY }, 100, { x: 5, y: 5 }, context);
+			}
+
+			const times = [];
+			let fps;
+
+			function drawInfo() {
+				let str = "(" + mouseX +  ", " + mouseY + ") fps: " + fps;
+				context.fillText(str, canvas.width - 100, 20);
 			}
 
 			(function animate() {
-				context.clearRect(0, 0, canvas.width, canvas.height)
+				context.clearRect(0, 0, canvas.width, canvas.height);
 				drawScene();
-				// requestAnimationFrame(animate);
+				if (debugMode) {
+					const now = performance.now();
+					while (times.length > 0 && times[0] <= now - 1000) {
+						times.shift();
+					}
+					times.push(now);
+					fps = times.length;
+					drawInfo();
+				}
+				requestAnimationFrame(animate);
 			})();
 
 		}
