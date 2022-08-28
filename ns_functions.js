@@ -1,178 +1,173 @@
-// /* Non-essential global variable, edited in index.html
-let debugMode = false; // (used in drawPolygon) */
+let debugMode = false; // edited in index.html (used in drawPolygon)
 
 /**
- * A point on the xy-plane
- * 
+ * A point on the xy-plane. Defined like: "const p = { x: 24, y: 25 };". The
+ * optional outL and outR properties are flags used in the drawPolygon function.
  * @typedef Point
- * @property {number} x - This point's x-coordinate
- * @property {number} y - This point's y-coordinate
- * @property {boolean} [outL] - True if this point is "out to the left"
- * @property {boolean} [outR] - True if this point is "out to the right"
+ * @property {number} x - This point's x-coordinate.
+ * @property {number} y - This point's y-coordinate.
+ * @property {boolean} [outL] - True if this point is "out to the left".
+ * @property {boolean} [outR] - True if this point is "out to the right".
  */
 
 /**
- * A line defined by a pair of two-dimensional points. The equation of the line is:
- *  y = (x - a.x) * (b.y - a.y) / (b.x - a.x) + a.y
- * 
+ * A line defined by a pair of two-dimensional points. The equation of the line
+ * is: "y = (x - a.x) * (b.y - a.y) / (b.x - a.x) + a.y".
  * @typedef TwoPointLine
- * @property {Point} a - A point on this line, not equal to 'b'
- * @property {Point} b - A point on this line, not equal to 'a'
+ * @property {Point} a - The first unique point on this line.
+ * @property {Point} b - The second unique point on this line.
  */
 
 /**
- * Because left is the direction of the negative x-axis, this function determines if the given point's
- * 	x-coordinate is less than the x-value of the given line at the same y-value
- * 
- * @param {Point} point - The point to be compared with a given line
- * @param {TwoPointLine} line - The line to be compared with a given point
- * @returns {boolean} True if the given point is to the left of the given line, and false otherwise
+ * Determines if the given point's x-coordinate is greater than or less than the
+ * x-value of the given line at the same y-value. The original equation contains
+ * division by (b.y - a.y), so multiply everything by the square of that
+ * denominator to remove division from the equation. Instead of multiplying by
+ * the square (n * n), (n * Math.sign(n)) could also be used.
+ * @param {Point} p - The point to be compared with a given line.
+ * @param {TwoPointLine} line - The line to be compared with a given point.
+ * @returns {number} A number greater than zero if the point is to the right of
+ * the line (more specifically, further in the direction of the positive
+ * x-axis). Otherwise, a negative number means the point is to the left, and a
+ * return value of zero means the point is on the line.
  */
-function leftOfLine(point, line) {
-	return point.x < (point.y - line.a.y) * (line.b.x - line.a.x) / (line.b.y - line.a.y) + line.a.x;
+function comparePointLine(p, { a, b }) {
+	const denom = b.y - a.y;
+	return (denom * (p.x - a.x) - (p.y - a.y) * (b.x - a.x)) * denom;
 }
 
 /**
- * Because right is the direction of the positive x-axis, this function determines if the given point's
- * 	x-coordinate is greater than the x-value of the given line at the same y-value
- * 
- * @param {Point} point - The point to be compared with a given line
- * @param {TwoPointLine} line - The line to be compared with a given point
- * @returns {boolean} True if the given point is to the right of the given line, and false otherwise
+ * Finds the intersection point of two lines. One line is given, and the other
+ * is the extention of the line segment between two given points.
+ * @param {Point} p - The first of the two points which define the first line.
+ * @param {Point} q - The second of the two points which define the first line.
+ * @param {TwoPointLine} line - The second line, given in two-point form.
+ * @returns {Point} The 2D point of intersection.
  */
-function rightOfLine(point, line) {
-	return point.x > (point.y - line.a.y) * (line.b.x - line.a.x) / (line.b.y - line.a.y) + line.a.x;
-}
-
-/**
- * Finds the intersection point of two lines. One line is given, and the other is the extention of the
- *  line segment between two given points
- * 
- * @param {Point} a - The first of the two points which define the first line
- * @param {Point} b - The second of the two points which define the first line
- * @param {TwoPointLine} line - The second line, given in two-point form
- * @returns {Point} The 2D point of intersection
- */
-function lineIntersectSegment(a, b, line) {
-	const n1 = a.x * b.y - a.y * b.x;
-	const n2 = line.a.x * line.b.y - line.a.y * line.b.x;
-	const n3 = (a.x - b.x) * (line.a.y - line.b.y) - (a.y - b.y) * (line.a.x - line.b.x);
+function lineIntersectSegment(p, q, { a, b }) {
+	const n1 = p.x * q.y - p.y * q.x;
+	const n2 = a.x * b.y - a.y * b.x;
+	const n3 = (p.x - q.x) * (a.y - b.y) - (p.y - q.y) * (a.x - b.x);
 	return {
-		x: (n1 * (line.a.x - line.b.x) - (a.x - b.x) * n2) / n3,
-		y: (n1 * (line.a.y - line.b.y) - (a.y - b.y) * n2) / n3
+		x: (n1 * (a.x - b.x) - (p.x - q.x) * n2) / n3,
+		y: (n1 * (a.y - b.y) - (p.y - q.y) * n2) / n3
 	};
 }
 
 /**
- * Represents a polygon as an ordered list of its vertex coordinates
- * 
- * @typedef VertexArrayPolygon
- * @property {string | CanvasGradient | CanvasPattern} fillStyle - A property of the Canvas 2D API
- * 	which specifies the color, gradient, or pattern to use when drawing this polygon
- * @property {number[]} verts - Array with an even number of elements (at least four) which represent
- * 	2D point coordinates in the form [x0, y0, x1, y1, x2, y2...]
- */
-
-/**
- * 
- * 
+ * An object consisting of three booleans, used to represent one of the eight
+ * symmetries of something similar a square. For example, as long as one axis is
+ * horizontal while the other is vertical, the xy-plane can be oriented in eight
+ * different ways. A default orientation is three false booleans.
  * @typedef SquareSymmetry
- * @property {boolean} negativeH
- * @property {boolean} negativeV
- * @property {boolean} verticalX
- * @property {() => string} toString
+ * @property {boolean} negativeH - True if the horizontal axis is flipped.
+ * @property {boolean} negativeV - True if the vertical axis is flipped.
+ * @property {boolean} verticalX - True if the x-axis is vertical.
+ * @property {() => string} toString - A function which returns a string
+ * containing a single digit in the range [0, 7]. 
  */
 
 /**
- * 
- * @param {boolean} negH
- * @param {boolean} negV
- * @param {boolean} verX
- * @returns {SquareSymmetry}
+ * @param {boolean} negH - True if the horizontal axis should be flipped.
+ * @param {boolean} negV - True if the vertical axis should be flipped.
+ * @param {boolean} verX - True if the x-axis should be vertical.
+ * @returns {SquareSymmetry} A SquareSymmetry object constructed from the three
+ * given booleans.
  */
- function square(negH, negV, verX) {
+function square(negH, negV, verX) {
 	return {
 		negativeH: negH,
 		negativeV: negV,
 		verticalX: verX,
-		toString: () => (negH + (negV * 2) + (verX * 4)).toString()
+		toString: () => (negH + negV * 2 + verX * 4).toString()
 	};
 }
 
 /**
- * 
- * @param {number} i - A non-negative integer
- * @returns {SquareSymmetry}
+ * @param {number} i - A non-negative integer.
+ * @returns {SquareSymmetry} A SquareSymmetry object that corresponds to the
+ * given integer. This correspondence matches that of the SquareSymmetry
+ * toString method.
  */
 function getOri(i) {
-	return square(i % 2 > 0, i % 4 > 1, i % 8 > 3); 
+	return square(i % 2 > 0, i % 4 > 1, i % 8 > 3);
 }
 
 /**
- * 
- * 
+ * An object consisting of two booleans and some helper methods, used to
+ * represent one of the four cardinal directions.
  * @typedef Cardinal
- * @property {boolean} isNegative
- * @property {boolean} isVertical
- * @property {() => number} index
- * @property {() => Cardinal} opposite
- * @property {(s: SquareSymmetry) => Cardinal} transferTo
- * @property {() => string} toString
+ * @property {boolean} isNegative - True if this cardinal points in a negative
+ * direction, and false otherwise. On a computer screen, the negative directions
+ * are usually left and up.
+ * @property {boolean} isVertical - True if this cardinal is vertical.
+ * @property {() => number} index - A function that returns this cardinal as a
+ * number. This number can be written in binary, where the two bits are the
+ * values of isNegative and isVertical.
+ * @property {() => Cardinal} opposite - A function that returns a new cardinal,
+ * pointing opposite to this one. The isNegative boolean is flipped.
+ * @property {(s: SquareSymmetry) => Cardinal} transferTo - If this cardinal is
+ * etched into the symmetry object, what direction is it pointing in when the
+ * square is in its default position? This function returns that cardinal.
+ * @property {() => string} toString - A two character pictorial representation
+ * of this cardinal direction. The possible outputs are "->", "<-", "\/", "/\".
  */
 
 /**
- * 
- * 
- * @param {boolean} negC 
- * @param {boolean} verC 
- * @returns {Cardinal}
+ * @param {boolean} negC - True if the cardinal points in a negative direction.
+ * @param {boolean} verC - True if the cardinal is vertical.
+ * @returns {Cardinal} A cardinal direction constructed from two booleans.
  */
 function cardinal(negC, verC) {
 	return {
 		isNegative: negC,
 		isVertical: verC,
-		index: () => negC + (verC * 2),
+		index: () => negC + verC * 2,
 		opposite: () => cardinal(!negC, verC),
-		transferTo: s => cardinal(negC != (verC ? s.negativeV : s.negativeH), verC != s.verticalX),
+		transferTo: s => cardinal(
+			negC != (verC ? s.negativeV : s.negativeH),
+			verC != s.verticalX
+		),
 		toString: () => verC ? negC ? "/\\" : "\\/" : negC ? "<-" : "->"
 	};
 }
 
 /**
- * ->, <-, \/, /\
- * @param {number} i - A non-negative integer
- * @returns {Cardinal}
+ * @param {number} i - A non-negative integer.
+ * @returns {Cardinal} A cardinal direction corresponding to the given integer.
  */
 function getDir(i) {
-	return cardinal(i % 2 > 0, i % 4 > 1); 
+	return cardinal(i % 2 > 0, i % 4 > 1);
 }
 
 /**
- * Any function which takes two coordinates, both in the range between 0 and 1 (inclusive), and returns
- *	a point on the xy-plane
- * 
+ * Any function which takes two coordinates, both in the range between 0 and 1
+ * (inclusive), and returns a point on the xy-plane.
  * @callback PointUpdater
- * @param {number} xCoord - A number between 0 and 1 which is the x-coordinate of the given point
- * @param {number} yCoord - A number between 0 and 1 which is the y-coordinate of the given point
- * @returns {Point} A new point created by the updater function
+ * @param {number} xCoord - A floating-point number between 0 and 1 which is the
+ * x-coordinate of the input point.
+ * @param {number} yCoord - A floating-point number between 0 and 1 which is the
+ * y-coordinate of the input point.
+ * @returns {Point} A new point, an updated version of the input.
  */
 
 /**
- * The return value of this function, the updater function, takes as input a point in the unit square.
- * 	The parameters of this function determine how any point in the input space will be transformed
- *  (scaled, translated, rotated, or reflected) into a new point in the output space. The output space
- * 	is a square defined by the given side length and top left point
- * 
- * @param {Point} topLeft - The the top left point of the output square
- * @param {number} sideLength - The side length of the output square
- * @param {SquareSymmetry} orient - One of eight ways to rotate and reflect the input
- * @returns {PointUpdater} A function which takes a point in the input square and returns its
- * 	corresponding point in the output square
+ * The return value of this function, the updater function, takes as input a
+ * point in the unit square. The parameters of this function determine how any
+ * point in the input space will be transformed (scaled, translated, rotated, or
+ * reflected) into a new point in the output space. The output space is a square
+ * defined by the given side length and top left point.
+ * @param {Point} topLeft - The the top left point of the output square.
+ * @param {number} sideLength - The side length of the output square.
+ * @param {SquareSymmetry} orient - One of eight different ways to rotate and
+ * reflect the input.
+ * @returns {PointUpdater} A function which takes a point in the input square
+ * and returns its corresponding point in the output square.
  */
- function getUpdater(topLeft, sideLength, orient) {
+function getUpdater(topLeft, sideLength, orient) {
 	const updateX = orient.negativeH ? (n => 1 - n) : (n => n);
 	const updateY = orient.negativeV ? (n => 1 - n) : (n => n);
-	if (orient.verticalX)  {
+	if (orient.verticalX) {
 		return function updater(xCoord, yCoord) {
 			return {
 				x: sideLength * updateX(yCoord) + topLeft.x,
@@ -180,81 +175,101 @@ function getDir(i) {
 				outL: false, outR: false
 			};
 		};
-	} else {
-		return function updater(xCoord, yCoord) {
-			return {
-				x: sideLength * updateX(xCoord) + topLeft.x,
-				y: sideLength * updateY(yCoord) + topLeft.y,
-				outL: false, outR: false
-			};
-		};
 	}
+	return function updater(xCoord, yCoord) {
+		return {
+			x: sideLength * updateX(xCoord) + topLeft.x,
+			y: sideLength * updateY(yCoord) + topLeft.y,
+			outL: false, outR: false
+		};
+	};
 }
 
 /**
- * 
- * @param {VertexArrayPolygon} plg - A template defining the shape of the polygon to be drawn
- * @param {TwoPointLine} edgeL - Cut off any part of the updated polygon left of this line
- * @param {TwoPointLine} edgeR - Cut off any part of the updated polygon right of this line
- * @param {PointUpdater} updater - A function to transform the template polygon's vertices
- * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides the 2D rendering
- * 	context for the drawing surface of a <canvas> element
+ * Represents a polygon as an ordered list of its vertex coordinates.
+ * @typedef VertexArrayPolygon
+ * @property {string | CanvasGradient | CanvasPattern} fillStyle - A property of
+ * the Canvas 2D API which specifies the color, gradient, or pattern to use when
+ * drawing this polygon.
+ * @property {number[]} verts - Array with an even number of elements (at least
+ * four) which represent 2D point coordinates. e.g. [x0, y0, x1, y1, x2, y2...]
+ */
+
+/**
+ * Draws a given polygon at a given canvas location. The updater function is
+ * used to move the polygon vertices around, and the two given lines define the
+ * area the polygon can be drawn into.
+ * @param {VertexArrayPolygon} plg - A template of the polygon to be drawn.
+ * @param {TwoPointLine} edgeL - Cut off the parts of the updated polygon that
+ * are to the left of this line.
+ * @param {TwoPointLine} edgeR - Cut off the parts of the updated polygon that
+ * are to the right of this line.
+ * @param {PointUpdater} updater - A function to transform the template
+ * polygon's generic vertices into specfic points on the canvas.
+ * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides
+ * the 2D rendering context for the drawing surface of a canvas element.
  */
 function drawPolygon(plg, edgeL, edgeR, updater, context) {
 	context.fillStyle = plg.fillStyle;
 	context.beginPath();
 	let p1 = updater(plg.verts[0], plg.verts[1]);
-	if (leftOfLine(p1, edgeL)) {
+	if (comparePointLine(p1, edgeL) < 0) {
 		p1.outL = true;
-		const isectL = lineIntersectSegment(p1, updater(plg.verts[2], plg.verts[3]), edgeL);
+		const nextPoint = updater(plg.verts[2], plg.verts[3]);
+		const isectL = lineIntersectSegment(p1, nextPoint, edgeL);
 		context.moveTo(isectL.x, isectL.y);
-	} else if (rightOfLine(p1, edgeR)) {
+	} else if (comparePointLine(p1, edgeR) > 0) {
 		p1.outR = true;
-		const isectR = lineIntersectSegment(p1, updater(plg.verts[2], plg.verts[3]), edgeR);
+		const nextPoint = updater(plg.verts[2], plg.verts[3]);
+		const isectR = lineIntersectSegment(p1, nextPoint, edgeR);
 		context.moveTo(isectR.x, isectR.y);
 	} else {
 		context.moveTo(p1.x, p1.y);
 	}
 	for (let i = 2; i < plg.verts.length; i += 2) {
 		const p2 = updater(plg.verts[i], plg.verts[i + 1]);
-		p2.outR = (p2.outL = leftOfLine(p2, edgeL)) ? false : rightOfLine(p2, edgeR);
-		if (p1.outL) {
-			if (p2.outR) { // both out, on opposite sides				p1 \~~~\ p2
-				const isectL = lineIntersectSegment(p1, p2, edgeL);
-				const isectR = lineIntersectSegment(p1, p2, edgeR);
-				context.lineTo(isectL.x, isectL.y);
-				context.lineTo(isectR.x, isectR.y);
-			} else if (!p2.outL) { // p1 out and p2 in					p1 \~~~~~p2
-				const isectL = lineIntersectSegment(p1, p2, edgeL);
-				context.lineTo(isectL.x, isectL.y);
-				context.lineTo(p2.x, p2.y);
-			} // else both out, on same side							p1 p2 \~~~~
-		} else if (p1.outR) {
-			if (p2.outL) { // both out, on opposite sides				p2 \~~~\ p1
-				const isectL = lineIntersectSegment(p1, p2, edgeL);
-				const isectR = lineIntersectSegment(p1, p2, edgeR);
-				context.lineTo(isectR.x, isectR.y);
-				context.lineTo(isectL.x, isectL.y);
-			} else if (!p2.outR) { // p1 out and p2 in					p2~~~~~\ p1
-				const isectR = lineIntersectSegment(p1, p2, edgeR);
-				context.lineTo(isectR.x, isectR.y);
-				context.lineTo(p2.x, p2.y);
-			} // else both out, on same side							~~~~\ p2 p1
+		if (comparePointLine(p2, edgeL) < 0) {
+			p2.outL = true;
 		} else {
-			if (p2.outR) { // p1 in and p2 out							p1~~~~~\ p2
+			p2.outR = comparePointLine(p2, edgeR) > 0;
+		}
+		if (p1.outL) {
+			if (p2.outR) {
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
 				const isectR = lineIntersectSegment(p1, p2, edgeR);
+				context.lineTo(isectL.x, isectL.y);
 				context.lineTo(isectR.x, isectR.y);
-			} else if (p2.outL) { // p1 in and p2 out					p2 \~~~~~p1
+			} else if (!p2.outL) {
 				const isectL = lineIntersectSegment(p1, p2, edgeL);
 				context.lineTo(isectL.x, isectL.y);
-			} else { // both in											p1~~~~~~~p2
+				context.lineTo(p2.x, p2.y);
+			}
+		} else if (p1.outR) {
+			if (p2.outL) {
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
+				context.lineTo(isectR.x, isectR.y);
+				context.lineTo(isectL.x, isectL.y);
+			} else if (!p2.outR) {
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
+				context.lineTo(isectR.x, isectR.y);
+				context.lineTo(p2.x, p2.y);
+			}
+		} else {
+			if (p2.outR) {
+				const isectR = lineIntersectSegment(p1, p2, edgeR);
+				context.lineTo(isectR.x, isectR.y);
+			} else if (p2.outL) {
+				const isectL = lineIntersectSegment(p1, p2, edgeL);
+				context.lineTo(isectL.x, isectL.y);
+			} else {
 				context.lineTo(p2.x, p2.y);
 			}
 		}
 		p1 = p2;
 	}
 	context.fill("evenodd");
-	// /* Non-essential addition, makes it easier to see the borders between polygons
+	// /* Makes it easier to see the borders between polygons
 	if (debugMode) {
 		context.stroke();
 	} // */
@@ -262,42 +277,73 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
 }
 
 /**
- * 
- * 
- * @typedef Tile
- * @property {() => boolean} isEmpty
- * @property {(target: Tile, ori: SquareSymmetry, dir: Cardinal,
- *  andBack: boolean) => Tile} linkTo - Connects this tile to its new neigbor, and then returns this tile 
- * @property {(updater: PointUpdater, edgeL: TwoPointLine, edgeR: TwoPointLine,
- *  ctx: CanvasRenderingContext2D) => undefined} draw
- * @property {(p: VertexArrayPolygon) => Tile} addPolygon
- * @property {Tile[]} nei
- * @property {SquareSymmetry[]} rel
- * @property {() => string} toString
+ * @callback TileLinker
+ * @param {Tile} target - The tile that this tile should be linked to.
+ * @param {SquareSymmetry} ori - If this tile is in default orientation, then
+ * this parameter is the SquareSymmetry object representing how the target tile
+ * should be oriented in relation to this tile.
+ * @param {Cardinal} dir - If this tile is in default orientation, then this
+ * cardinal is the direction to walk in to get to the target tile.
+ * @param {boolean} andBack - Determines whether or not to link the target back
+ * to this tile. If true, another TileLinker will be called to make the link go
+ * both ways. The andBack value of the second function call will be false.
+ * @returns {Tile} - The tile from which this function was called upon.
  */
 
 /**
- * 
- * 
- * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides the 2D rendering
- * 	context for the drawing surface of a <canvas> element
- * @param {string | CanvasGradient | CanvasPattern } baseFillStyle - A property of the Canvas 2D API
- * 	which specifies the color, gradient, or pattern to use when drawing the created tile's background
- * @param {...VertexArrayPolygon} polygons 
- * @returns {Tile}
+ * @callback TileDrawer
+ * @param {PointUpdater} updater - A function passed along to drawPolygon each
+ * time a polygon that is part of this tile needs to be drawn.
+ * @param {TwoPointLine} edgeL - Cut off tile parts that are left of this line.
+ * @param {TwoPointLine} edgeR - Cut off tile parts that are right of this line.
+ * @param {CanvasRenderingContext2D} ctx - Part of the Canvas API, provides the
+ * 2D rendering context for the drawing surface of a canvas element.
+ */
+
+/**
+ * Tiles are the building blocks of a walkable space. Kind of like the nodes of
+ * a graph. A tile has a cosmetic appearance and connections to other tiles.
+ * @typedef Tile
+ * @property {() => boolean} isEmpty - A function that reports whether or not
+ * this tile is complete. A tile's neighbors are initially empty.
+ * @property {TileLinker} linkTo - Connects this tile to its new neigbor, and
+ * then returns this tile. The link can be directed or undirected.
+ * @property {TileDrawer} draw - Draws this tile, making use of edges which
+ * control how much of the tile is drawn.
+ * @property {(p: VertexArrayPolygon) => Tile} addPolygon - A function used to
+ * add polygons to this tile's polygon array. Updates and returns this tile.
+ * @property {Tile[]} nei - The four tiles adjacent to this one.
+ * @property {SquareSymmetry[]} rel - The orientations of the neighbor tiles
+ * relative to this tile in its default orientation.
+ * @property {() => string} toString - Calls the toString method of this tile's
+ * internal baseFillStyle variable, which is usually the name of a color.
+ */
+
+/**
+ * A tile constructing function, takes a list of polygons, and also creates the
+ * background polygon, which is simply a square the size of the tile.
+ * @param {string | CanvasGradient | CanvasPattern } baseFillStyle - A property
+ * of the Canvas 2D API which specifies the color, gradient, or pattern to use
+ * when drawing the created tile's background.
+ * @param {...VertexArrayPolygon} polygons - The polygons that make up the
+ * visual content of this tile.
+ * @returns {Tile} The constructed tile object, with no connections.
  */
 function createTile(baseFillStyle, ...polygons) {
-	polygons.unshift({ fillStyle: baseFillStyle, verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0] });
+	polygons.unshift({
+		fillStyle: baseFillStyle,
+		verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
+	});
 	const neighbors = new Array(4).fill({ isEmpty: () => true });
 	const relations = new Array(4).fill(undefined);
 	return {
 		isEmpty: () => false,
-		linkTo: function(target, ori, dir, andBack) {
+		linkTo: function (target, ori, dir, andBack) {
 			const i = dir.index();
 			neighbors[i] = target;
 			relations[i] = ori;
 			if (andBack) {
-				let back = dir.opposite().transferTo(ori);
+				const back = dir.opposite().transferTo(ori);
 				if (ori.verticalX && ori.negativeH != ori.negativeV) {
 					ori = square(ori.negativeV, ori.negativeH, ori.verticalX);
 				}
@@ -305,10 +351,10 @@ function createTile(baseFillStyle, ...polygons) {
 			}
 			return this;
 		},
-		draw: function(updater, edgeL, edgeR, ctx) {
+		draw: function (updater, edgeL, edgeR, ctx) {
 			polygons.forEach(p => drawPolygon(p, edgeL, edgeR, updater, ctx));
 		},
-		addPolygon: function(p) {
+		addPolygon: function (p) {
 			polygons.push(p);
 			return this;
 		},
@@ -319,43 +365,62 @@ function createTile(baseFillStyle, ...polygons) {
 }
 
 /**
- * 
- * @param {SquareSymmetry} ori 
- * @param {SquareSymmetry} rel 
- * @returns {SquareSymmetry}
+ * Finds the current orientation of a destination, given the current orientation
+ * of the start location and the relative orientation of the destination.
+ * @param {SquareSymmetry} ori - The current orientation of the start location.
+ * @param {SquareSymmetry} rel - The orientation of the destination relative to
+ * the start location in its default orientation.
+ * @returns {SquareSymmetry} - The current orientation of the destination.
  */
- function takeStep(ori, rel) {
-	return (ori.verticalX && rel.negativeH != rel.negativeV)
-		? square(ori.negativeH == rel.negativeH, ori.negativeV == rel.negativeV, ori.verticalX != rel.verticalX)
-		: square(ori.negativeH != rel.negativeH, ori.negativeV != rel.negativeV, ori.verticalX != rel.verticalX);
+function takeStep(ori, rel) {
+	if (ori.verticalX && rel.negativeH != rel.negativeV) {
+		return square(
+			ori.negativeH == rel.negativeH,
+			ori.negativeV == rel.negativeV,
+			ori.verticalX != rel.verticalX
+		);
+	}
+	return square(
+		ori.negativeH != rel.negativeH,
+		ori.negativeV != rel.negativeV,
+		ori.verticalX != rel.verticalX
+	);
 }
 
 /**
- * 
+ * An object to control walking along the connections between tiles. Stores the
+ * tile that the walker is currently on, as well as the orientation of that tile
+ * from the view of the walker.
  * @typedef Walk
- * @property {() => boolean} canContinue
- * @property {(direct: Cardinal) => Walk} to
- * @property {(t: Tile, o: SquareSymmetry) => Walk} from
- * @property {() => Tile} currTile
- * @property {() => SquareSymmetry} currOri
+ * @property {() => boolean} canContinue - A function that returns false if the
+ * current tile is empty, and true otherwise.
+ * @property {(direct: Cardinal) => Walk} to - Moves in the given direction from
+ * the current tile to one of it's neighbors. The neighbor that is walked to is
+ * determined by the current orientation as well as the given direction.
+ * @property {(t: Tile, o: SquareSymmetry) => Walk} from - Sets the current tile
+ * and orientation to the given values, and returns this walk.
+ * @property {() => Tile} currTile - A getter function for the current tile.
+ * @property {() => SquareSymmetry} currOri - A getter function for the current
+ * orientation.
  */
 
 /**
- * 
- * @param {Tile} tile 
- * @param {SquareSymmetry} orient 
- * @returns {Walk}
+ * Creates a walk object from the two given parameters. These values can be set
+ * by the walk's "from" function, so they are optional.
+ * @param {Tile} [tile] - The start tile of the walk.
+ * @param {SquareSymmetry} [orient] - The initial orientation of the walk.
+ * @returns {Walk} The constructed walk object.
  */
 function startWalk(tile, orient) {
 	return {
 		canContinue: () => !tile.isEmpty(),
-		to: function(direct) {
+		to: function (direct) {
 			const i = direct.transferTo(orient).index();
 			orient = takeStep(orient, tile.rel[i]);
 			tile = tile.nei[i];
 			return this;
 		},
-		from: function(t, o) {
+		from: function (t, o) {
 			tile = t;
 			orient = o;
 			return this;
@@ -366,82 +431,106 @@ function startWalk(tile, orient) {
 }
 
 /**
- * True if b is steeper / closer to y-axis
- * 
- * @param {TwoPointLine} f1 
- * @param {TwoPointLine} f2 
- * @returns {boolean}
+ * Compares the steepness of the slopes of two lines. The statement
+ * "compareSlope(f, g) > 0" is true if and only if f is steeper than g. 
+ * @param {TwoPointLine} line1 - The first of two lines.
+ * @param {TwoPointLine} line2 - The second of two lines.
+ * @returns {number} A number greater than zero if line1 is steeper than line2.
+ * Returns zero if the two lines have the same slope (absolute value), and a
+ * number less than zero if line2 is steeper than line1.
  */
-function compareSlope(f1, f2) {
-	return (f1.b.x - f1.a.x) * (f2.b.y - f2.a.y) < (f2.b.x - f2.a.x) * (f1.b.y - f1.a.y);
+function compareSlope({ a, b }, { a: c, b: d }) {
+	const semislope2 = Math.abs((b.x - a.x) * (d.y - c.y));
+	return Math.abs((d.x - c.x) * (b.y - a.y)) - semislope2;
 }
 
 /**
- * 
- * @param {Tile} start
- * @param {Point} pTL 
- * @param {Point} origin 
- * @param {number} len 
- * @param {Point} quadSize 
- * @param {CanvasRenderingContext2D} context
+ * Draws the tiles in the portion of a walkable space that can be seen by a
+ * single viewer in their current location. This is done by walking along
+ * branches of tiles, and drawing the visible portion of each one.
+ * @param {Tile} start - The tile that the viewer stands on.
+ * @param {Point} pTL - The location of the start tile's top left corner.
+ * @param {Point} origin - The viewer's location, the origin of their eyesight.
+ * @param {number} len - The sidelength of a tile.
+ * @param {Point} limits - Two values that limit the viewable area to a
+ * rectangle centered on the start tile. The rectangle has a height of
+ * (2 * limits.y + 1) tiles and a width of (2 * limits.x + 1) tiles.
+ * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides
+ * the 2D rendering context for the drawing surface of a canvas element.
  */
-function tileTree(start, pTL, origin, len, quadSize, context)  {
+function tileTree(start, pTL, origin, len, limits, context) {
 	const pBR = { x: pTL.x + len, y: pTL.y + len };
-	const xTopPos = { a: pTL, b: { x: pTL.x + 1, y: pTL.y } };
-	const xTopNeg = { a: { x: pTL.x + 1, y: pTL.y }, b: pTL };
-	const yLefPos = { a: pTL, b: { x: pTL.x, y: pTL.y + 1 } };
-	const yLefNeg = { a: { x: pTL.x, y: pTL.y + 1 }, b: pTL };
-	const yRigPos = { a: pBR, b: { x: pBR.x, y: pBR.y + 1 } };
-	const yRigNeg = { a: { x: pBR.x, y: pBR.y + 1 }, b: pBR };
+	const xTop = { a: pTL, b: { x: pTL.x + 1, y: pTL.y } };
+	const xBot = { a: pBR, b: { x: pBR.x + 1, y: pBR.y } };
+	const yLef = { a: pTL, b: { x: pTL.x, y: pTL.y + 1 } };
+	const yRig = { a: pBR, b: { x: pBR.x, y: pBR.y + 1 } };
+	const axes = [yLef, xTop, yLef, xBot, xTop, yRig, xBot, yRig];
+	const walk = startWalk();
 	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir);
-	const axes = [yLefPos, xTopNeg, yLefNeg, xTopNeg, xTopPos, yRigPos, xTopPos, yRigNeg];
 	for (let i = 0; i < 4; ++i) {
-		const b = i > 1;
-		const r = i % 2 > 0; 
+		const cr = i % 2 > 0;
+		const cb = i > 1;
+		const crSign = cr ? -1 : 1;
+		const cbSign = cb ? -1 : 1;
+		const xLim = limits[cr ? 'y' : 'x'];
+		const yLim = limits[cr ? 'x' : 'y'];
+		walk.from(start, getOri(0));
+		let nextX = pTL.x + len * cr;
+		let nextY = pTL.y + len * cb;
+		branch(nextX, nextY, axes[i], axes[i + 4], xLim, yLim);
 
 		/**
-		 * (b * len) == (b ? len : 0)
-		 * 
-		 * @param {Walk} walk 
-		 * @param {number} cx 
-		 * @param {number} cy 
-		 * @param {TwoPointLine} edgeL 
-		 * @param {TwoPointLine} edgeR 
-		 * @param {number} xMax 
-		 * @param {number} yMax 
+		 * A recursive function that draws a single tile each time it is called.
+		 * Draws tiles in one of four diagonal directions, starting at a base
+		 * point and branching out. The area visible along a branch becomes more
+		 * restricted by the two edges as the walk gets further from the origin. 
+		 * @param {number} cx - The y-coordinate of this branch's base point.
+		 * @param {number} cy - The y-coordinate of this branch's base point.
+		 * @param {TwoPointLine} edgeL - The starting left boundary of the
+		 * viewer's sight down this branch segment.
+		 * @param {TwoPointLine} edgeR - The startiing right boundary of the
+		 * viewer's sight down this branch segment.
+		 * @param {number} xRem - The number of times that the tile tree's walk
+		 * can move in the current branch's x direction.
+		 * @param {number} yRem - The number of times that the tile tree's walk
+		 * can move in the current branch's y direction.
 		 */
-		function branch(walk, cx, cy, edgeL, edgeR, xMax, yMax) {
+		function branch(cx, cy, edgeL, edgeR, xRem, yRem) {
 			const tile = walk.currTile();
 			const orient = walk.currOri();
-			const newEdge = { a: origin, b: { x: cx + (r ? -len : len), y: cy + (b ? -len : len) } };
-			tile.draw(getUpdater({ x: cx - (r ? len : 0), y: cy - (b ? len : 0) }, len, orient), edgeL, edgeR, context);
-			// * Toggle here to draw the tree one tile at a time in the browser's debugger
-			// debugger; // * /
-			if (xMax > 0 && walk.to(directions[i]).canContinue()) {
-				const newLeft = (b != compareSlope(newEdge, edgeL)) ? edgeL : newEdge;
-				if (b != compareSlope(newLeft, edgeR)) {
-					branch(walk, cx + (r ? 0 : len), cy + (r ? b ? -len : len : 0), newLeft, edgeR, xMax - 1, yMax);
+			nextX = cx + len * crSign;
+			nextY = cy + len * cbSign;
+			const newEdge = { a: origin, b: { x: nextX, y: nextY } };
+			if (i == 0 || yRem != yLim && (i < 3 || xRem != xLim)) {
+				nextX = cx + len * cr * crSign;
+				nextY = cy + len * cb * cbSign;
+				const updater = getUpdater({ x: nextX, y: nextY }, len, orient);
+				tile.draw(updater, edgeL, edgeR, context);
+			}
+			walk.to(directions[i]);
+			if (xRem > 0 && walk.canContinue()) {
+				let newLeft = newEdge;
+				if (compareSlope(newEdge, edgeL) * crSign > 0) {
+					newLeft = edgeL;
+				}
+				if (compareSlope(newLeft, edgeR) * crSign > 0) {
+					nextX = cx + len * !cr * crSign;
+					nextY = cy + len * cr * cbSign;
+					branch(nextX, nextY, newLeft, edgeR, xRem - 1, yRem);
 				}
 			}
-			if (yMax > 0 && walk.from(tile, orient).to(directions[i + 4]).canContinue()) {
-				if (b != compareSlope(newEdge, edgeR)) {
+			walk.from(tile, orient).to(directions[i + 4]);
+			if (yRem > 0 && walk.canContinue()) {
+				if (compareSlope(newEdge, edgeR) * crSign > 0) {
 					edgeR = newEdge;
 				}
-				if (b != compareSlope(edgeL, edgeR)) {
-					branch(walk, cx - (r ? len : 0), cy + (r ? 0 : b ? -len : len), edgeL, edgeR, xMax, yMax - 1);
+				if (compareSlope(edgeL, edgeR) * crSign > 0) {
+					nextX = cx + len * cr * crSign;
+					nextY = cy + len * !cr * cbSign;
+					branch(nextX, nextY, edgeL, edgeR, xRem, yRem - 1);
 				}
 			}
 		}
-
-		branch(
-			startWalk(start, getOri(0)),
-			pTL.x + (r ? len : 0),
-			pTL.y + (b ? len : 0),
-			axes[i],
-			axes[i + 4],
-			quadSize[r ? 'y' : 'x'],
-			quadSize[r ? 'x' : 'y']
-		);
 	}
 }
 
@@ -456,10 +545,14 @@ function tileTree(start, pTL, origin, len, quadSize, context)  {
 })();
 
 function test_transferTo() {
-	console.assert(getDir(1).transferTo(getOri(0)).toString() == "<-", "\"<-\" transfered to ori[0] should be \"<-\"");
-	console.assert(getDir(2).transferTo(getOri(4)).toString() == "->", "\"\\/\" transfered to ori[4] should be \"->\"");
-	console.assert(getDir(0).transferTo(getOri(6)).toString() == "\\/", "\"->\" transfered to ori[6] should be \"\\/\"");
-	console.assert(getDir(3).transferTo(getOri(2)).toString() == "\\/", "\"/\\\" transfered to ori[2] should be \"\\/\"");
+	console.assert(getDir(1).transferTo(getOri(0)).toString() == "<-",
+		"\"<-\" transfered to ori[0] should be \"<-\"");
+	console.assert(getDir(2).transferTo(getOri(4)).toString() == "->",
+		"\"\\/\" transfered to ori[4] should be \"->\"");
+	console.assert(getDir(0).transferTo(getOri(6)).toString() == "\\/",
+		"\"->\" transfered to ori[6] should be \"\\/\"");
+	console.assert(getDir(3).transferTo(getOri(2)).toString() == "\\/",
+		"\"/\\\" transfered to ori[2] should be \"\\/\"");
 }
 
 function test_linkTo(abc) {
@@ -470,22 +563,28 @@ function test_linkTo(abc) {
 	abc[2].linkTo(abc[0], getOri(0), getDir(0), true);
 	abc[1].linkTo(abc[1], getOri(2), getDir(2), false);
 	abc[2].linkTo(abc[0], getOri(1), getDir(1), false);
-	console.assert(abc[1].rel[1].toString() == "0", "B's \"<-\" relation should be ori[0]");
-	console.assert(abc[1].rel[0].toString() == "5", "B's \"->\" relation should be ori[5]");
-	console.assert(abc[0].rel[3].toString() == "2", "B's \"/\\\" relation should be ori[2]");
-	console.assert(abc[0].nei.map(x => x.toString()).join() == "B,C,B,C", "A's neigbor array should be [B, C, B, C]");
-	console.assert(abc[1].nei.map(x => x.toString()).join() == "A,A,B,C", "B's neigbor array should be [A, A, B, C]");
-	console.assert(abc[2].nei.map(x => x.toString()).join() == "A,A,B,A", "C's neigbor array should be [A, A, B, A]");
+	console.assert(abc[1].rel[1].toString() == "0",
+		"B's \"<-\" relation should be ori[0]");
+	console.assert(abc[1].rel[0].toString() == "5",
+		"B's \"->\" relation should be ori[5]");
+	console.assert(abc[0].rel[3].toString() == "2",
+		"B's \"/\\\" relation should be ori[2]");
+	console.assert(abc[0].nei.map(x => x.toString()).join() == "B,C,B,C",
+		"A's neigbor array should be [B, C, B, C]");
+	console.assert(abc[1].nei.map(x => x.toString()).join() == "A,A,B,C",
+		"B's neigbor array should be [A, A, B, C]");
+	console.assert(abc[2].nei.map(x => x.toString()).join() == "A,A,B,A",
+		"C's neigbor array should be [A, A, B, A]");
 }
 
 function test_walkTo(abc) {
-	const walk = startWalk(abc[0], getOri(0));
+	const w = startWalk(abc[0], getOri(0));
 	const seq = [1, 2, 0, 3];
 	for (let i = 0; i < 6; ++i) {
-		walk.to(getDir(seq[i % 4]));
+		w.to(getDir(seq[i % 4]));
 	}
-	console.assert(walk.currTile().toString() + walk.currOri().toString() == "A3",
-		"Start at A in ori[0] and return to A in ori[3] after moving left, down, right, up, left, down");
+	console.assert(w.currTile().toString() + w.currOri().toString() == "A3",
+		"Move <-, \\/, ->, /\\, <-, \\/ from A in ori[0] and return in ori[3]");
 }
 
 // */
