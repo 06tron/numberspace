@@ -1,3 +1,62 @@
+function dieFace(color) {
+	return { fillStyle: color, verts: [
+		0.03, 0.03,
+		0.97, 0.03,
+		0.97, 0.97,
+		0.03, 0.97,
+		0.03, 0.03
+	] };
+}
+const pipTL = { fillStyle: "black", verts: [
+	0.1, 0.1,
+	0.3, 0.1,
+	0.3, 0.3,
+	0.1, 0.3,
+	0.1, 0.1
+] };
+const pipTR = { fillStyle: "black", verts: [
+	0.7, 0.1,
+	0.9, 0.1,
+	0.9, 0.3,
+	0.7, 0.3,
+	0.7, 0.1
+] };
+const pipCL = { fillStyle: "black", verts: [
+	0.1, 0.4,
+	0.3, 0.4,
+	0.3, 0.6,
+	0.1, 0.6,
+	0.1, 0.4
+] };
+const pipCC = { fillStyle: "black", verts: [
+	0.4, 0.4,
+	0.6, 0.4,
+	0.6, 0.6,
+	0.4, 0.6,
+	0.4, 0.4
+] };
+const pipCR = { fillStyle: "black", verts: [
+	0.7, 0.4,
+	0.9, 0.4,
+	0.9, 0.6,
+	0.7, 0.6,
+	0.7, 0.4
+] };
+const pipBL = { fillStyle: "black", verts: [
+	0.1, 0.7,
+	0.3, 0.7,
+	0.3, 0.9,
+	0.1, 0.9,
+	0.1, 0.7
+] };
+const pipBR = { fillStyle: "black", verts: [
+	0.7, 0.7,
+	0.9, 0.7,
+	0.9, 0.9,
+	0.7, 0.9,
+	0.7, 0.7
+] };
+
 let digit1 = [
 	0.6116, 0.7924,
 	0.5372, 0.7924,

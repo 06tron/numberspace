@@ -38,7 +38,7 @@ function comparePointLine(p, { a, b }) {
 
 /**
  * Finds the intersection point of two lines. One line is given, and the other
- * is the extention of the line segment between two given points.
+ * is the extension of the line segment between two given points.
  * @param {Point} p - The first of the two points which define the first line.
  * @param {Point} q - The second of the two points which define the first line.
  * @param {TwoPointLine} line - The second line, given in two-point form.
@@ -205,7 +205,7 @@ function getUpdater(topLeft, sideLength, orient) {
  * @param {TwoPointLine} edgeR - Cut off the parts of the updated polygon that
  * are to the right of this line.
  * @param {PointUpdater} updater - A function to transform the template
- * polygon's generic vertices into specfic points on the canvas.
+ * polygon's generic vertices into specific points on the canvas.
  * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides
  * the 2D rendering context for the drawing surface of a canvas element.
  */
@@ -284,9 +284,10 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * should be oriented in relation to this tile.
  * @param {Cardinal} dir - If this tile is in default orientation, then this
  * cardinal is the direction to walk in to get to the target tile.
- * @param {boolean} andBack - Determines whether or not to link the target back
- * to this tile. If true, another TileLinker will be called to make the link go
- * both ways. The andBack value of the second function call will be false.
+ * @param {boolean} [andBack] - Defaults to true, and determines whether or not
+ * to link the target back to this tile. If true, another TileLinker will be
+ * called to make the link go both ways. The andBack value of the second
+ * function call will be false.
  * @returns {Tile} - The tile from which this function was called upon.
  */
 
@@ -306,7 +307,7 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * @typedef Tile
  * @property {() => boolean} isEmpty - A function that reports whether or not
  * this tile is complete. A tile's neighbors are initially empty.
- * @property {TileLinker} linkTo - Connects this tile to its new neigbor, and
+ * @property {TileLinker} linkTo - Connects this tile to its new neighbor, and
  * then returns this tile. The link can be directed or undirected.
  * @property {TileDrawer} draw - Draws this tile, making use of edges which
  * control how much of the tile is drawn.
@@ -335,10 +336,10 @@ function createTile(baseFillStyle, ...polygons) {
 		verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
 	});
 	const neighbors = new Array(4).fill({ isEmpty: () => true });
-	const relations = new Array(4).fill(undefined);
+	const relations = new Array(4).fill(null);
 	return {
 		isEmpty: () => false,
-		linkTo: function (target, ori, dir, andBack) {
+		linkTo: function (target, ori, dir, andBack = true) {
 			const i = dir.index();
 			neighbors[i] = target;
 			relations[i] = ori;
@@ -395,8 +396,8 @@ function takeStep(ori, rel) {
  * @property {() => boolean} canContinue - A function that returns false if the
  * current tile is empty, and true otherwise.
  * @property {(direct: Cardinal) => Walk} to - Moves in the given direction from
- * the current tile to one of it's neighbors. The neighbor that is walked to is
- * determined by the current orientation as well as the given direction.
+ * the current tile to one of it's neighbors. The correct neighbor is determined
+ * by the current orientation as well as the given direction. Returns this walk.
  * @property {(t: Tile, o: SquareSymmetry) => Walk} from - Sets the current tile
  * and orientation to the given values, and returns this walk.
  * @property {() => Tile} currTile - A getter function for the current tile.
@@ -414,9 +415,20 @@ function takeStep(ori, rel) {
 function startWalk(tile, orient) {
 	return {
 		canContinue: () => !tile.isEmpty(),
+		attempt: function (direct) {
+			const i = direct.transferTo(orient).index();
+			if (tile.rel[i] != null) {
+				orient = takeStep(orient, tile.rel[i]);
+				tile = tile.nei[i];
+				return true;
+			}
+			return false;
+		},
 		to: function (direct) {
 			const i = direct.transferTo(orient).index();
-			orient = takeStep(orient, tile.rel[i]);
+			if (tile.rel[i] != null) {
+				orient = takeStep(orient, tile.rel[i]);
+			}
 			tile = tile.nei[i];
 			return this;
 		},
@@ -440,41 +452,44 @@ function startWalk(tile, orient) {
  * number less than zero if line2 is steeper than line1.
  */
 function compareSlope({ a, b }, { a: c, b: d }) {
-	const semislope2 = Math.abs((b.x - a.x) * (d.y - c.y));
-	return Math.abs((d.x - c.x) * (b.y - a.y)) - semislope2;
+	const semiSlope2 = Math.abs((b.x - a.x) * (d.y - c.y));
+	return Math.abs((d.x - c.x) * (b.y - a.y)) - semiSlope2;
 }
 
 /**
  * Draws the tiles in the portion of a walkable space that can be seen by a
  * single viewer in their current location. This is done by walking along
  * branches of tiles, and drawing the visible portion of each one.
- * @param {Tile} start - The tile that the viewer stands on.
- * @param {Point} pTL - The location of the start tile's top left corner.
- * @param {Point} origin - The viewer's location, the origin of their eyesight.
- * @param {number} len - The sidelength of a tile.
- * @param {Point} limits - Two values that limit the viewable area to a
+ * @param {Tile} walk - A walk object that describes the tile the viewer starts
+ * on. Before returning, the walk object is reset to its original state.
+ * @param {Point} pTL - The coordinates of the starting tile's top left corner.
+ * @param {Point} origin - The screen coordinates of the viewer's location,
+ * where their eyesight originates from.
+ * @param {number} len - The side length of a tile.
+ * @param {number[]} limits - Two values that limit the viewable area to a
  * rectangle centered on the start tile. The rectangle has a height of
- * (2 * limits.y + 1) tiles and a width of (2 * limits.x + 1) tiles.
+ * (2 * limits.y + 1) tiles and a width of (2 * limits.x + 1) tiles. CHANGE
  * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides
  * the 2D rendering context for the drawing surface of a canvas element.
  */
-function tileTree(start, pTL, origin, len, limits, context) {
+function tileTree(walk, pTL, origin, len, limits, context) {
 	const pBR = { x: pTL.x + len, y: pTL.y + len };
 	const xTop = { a: pTL, b: { x: pTL.x + 1, y: pTL.y } };
 	const xBot = { a: pBR, b: { x: pBR.x + 1, y: pBR.y } };
 	const yLef = { a: pTL, b: { x: pTL.x, y: pTL.y + 1 } };
 	const yRig = { a: pBR, b: { x: pBR.x, y: pBR.y + 1 } };
 	const axes = [yLef, xTop, yLef, xBot, xTop, yRig, xBot, yRig];
-	const walk = startWalk();
-	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir);
+	const startTile = walk.currTile();
+	const startOri = walk.currOri();
+	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir); // TODO: numbers?
 	for (let i = 0; i < 4; ++i) {
 		const cr = i % 2 > 0;
 		const cb = i > 1;
 		const crSign = cr ? -1 : 1;
 		const cbSign = cb ? -1 : 1;
-		const xLim = limits[cr ? 'y' : 'x'];
-		const yLim = limits[cr ? 'x' : 'y'];
-		walk.from(start, getOri(0));
+		const xLim = limits[cr * (2 + cb)];
+		const yLim = limits[!cr * (1 + cb) + 1];
+		walk.from(startTile, startOri);
 		let nextX = pTL.x + len * cr;
 		let nextY = pTL.y + len * cb;
 		branch(nextX, nextY, axes[i], axes[i + 4], xLim, yLim);
@@ -488,7 +503,7 @@ function tileTree(start, pTL, origin, len, limits, context) {
 		 * @param {number} cy - The y-coordinate of this branch's base point.
 		 * @param {TwoPointLine} edgeL - The starting left boundary of the
 		 * viewer's sight down this branch segment.
-		 * @param {TwoPointLine} edgeR - The startiing right boundary of the
+		 * @param {TwoPointLine} edgeR - The starting right boundary of the
 		 * viewer's sight down this branch segment.
 		 * @param {number} xRem - The number of times that the tile tree's walk
 		 * can move in the current branch's x direction.
@@ -532,6 +547,7 @@ function tileTree(start, pTL, origin, len, limits, context) {
 			}
 		}
 	}
+	walk.from(startTile, startOri);
 }
 
 /* use 'Cmd'+'/' here to toggle testing
@@ -546,13 +562,13 @@ function tileTree(start, pTL, origin, len, limits, context) {
 
 function test_transferTo() {
 	console.assert(getDir(1).transferTo(getOri(0)).toString() == "<-",
-		"\"<-\" transfered to ori[0] should be \"<-\"");
+		"\"<-\" transferred to ori[0] should be \"<-\"");
 	console.assert(getDir(2).transferTo(getOri(4)).toString() == "->",
-		"\"\\/\" transfered to ori[4] should be \"->\"");
+		"\"\\/\" transferred to ori[4] should be \"->\"");
 	console.assert(getDir(0).transferTo(getOri(6)).toString() == "\\/",
-		"\"->\" transfered to ori[6] should be \"\\/\"");
+		"\"->\" transferred to ori[6] should be \"\\/\"");
 	console.assert(getDir(3).transferTo(getOri(2)).toString() == "\\/",
-		"\"/\\\" transfered to ori[2] should be \"\\/\"");
+		"\"/\\\" transferred to ori[2] should be \"\\/\"");
 }
 
 function test_linkTo(abc) {
@@ -570,11 +586,11 @@ function test_linkTo(abc) {
 	console.assert(abc[0].rel[3].toString() == "2",
 		"B's \"/\\\" relation should be ori[2]");
 	console.assert(abc[0].nei.map(x => x.toString()).join() == "B,C,B,C",
-		"A's neigbor array should be [B, C, B, C]");
+		"A's neighbor array should be [B, C, B, C]");
 	console.assert(abc[1].nei.map(x => x.toString()).join() == "A,A,B,C",
-		"B's neigbor array should be [A, A, B, C]");
+		"B's neighbor array should be [A, A, B, C]");
 	console.assert(abc[2].nei.map(x => x.toString()).join() == "A,A,B,A",
-		"C's neigbor array should be [A, A, B, A]");
+		"C's neighbor array should be [A, A, B, A]");
 }
 
 function test_walkTo(abc) {
