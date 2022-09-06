@@ -24,7 +24,7 @@
 			};
 
 			canvas.onclick = function (event) {
-				debugMode = !debugMode;
+				// debugMode = !debugMode;
 				onTile = false;
 				tileX = 0;
 				tileY = 0;
@@ -83,9 +83,9 @@
 			const tileT4 = createTile("white", dieFace("lightgreen"));
 			const tileT5 = createTile("white", dieFace("pink"));
 			const tileT6 = createTile("white", dieFace("lightcoral"));
-			const tileT7 = createTile("white", dieFace("yellow"), pipCC);
-			const tileT8 = createTile("white", dieFace("plum"), pipCC);
-			const tileT9 = createTile("white", dieFace("lightgreen"), pipCC);
+			const tileT7 = createTile("white", dieFace("red"));
+			const tileT8 = createTile("white", dieFace("green"));
+			const tileT9 = createTile("white", dieFace("blue"));
 			tileT1.linkTo(tileT2, getOri(5), getDir(1));
 			tileT1.linkTo(tileT3, getOri(0), getDir(2));
 			tileT1.linkTo(tileT4, getOri(6), getDir(0));

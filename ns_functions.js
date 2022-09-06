@@ -495,10 +495,11 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 		branch(nextX, nextY, axes[i], axes[i + 4], xLim, yLim);
 
 		/**
-		 * A recursive function that draws a single tile each time it is called.
-		 * Draws tiles in one of four diagonal directions, starting at a base
-		 * point and branching out. The area visible along a branch becomes more
-		 * restricted by the two edges as the walk gets further from the origin. 
+		 * A recursive function that usually draws a single tile each time it is
+		 * called. Draws tiles in one of four diagonal directions, starting at a
+		 * base point and branching out. The area visible along a branch becomes
+		 * more restricted by the two edges as the walk gets further from the
+		 * origin. 
 		 * @param {number} cx - The y-coordinate of this branch's base point.
 		 * @param {number} cy - The y-coordinate of this branch's base point.
 		 * @param {TwoPointLine} edgeL - The starting left boundary of the
