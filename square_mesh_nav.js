@@ -481,7 +481,7 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 	const axes = [yLef, xTop, yLef, xBot, xTop, yRig, xBot, yRig];
 	const startTile = walk.currTile();
 	const startOri = walk.currOri();
-	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir); // TODO: numbers?
+	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir);
 	for (let i = 0; i < 4; ++i) {
 		const cr = i % 2 > 0;
 		const cb = i > 1;
@@ -551,7 +551,7 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 	walk.from(startTile, startOri);
 }
 
-/* use 'Cmd'+'/' here to toggle testing
+// /* use 'Cmd'+'/' here to toggle testing
 
 (function main() {
 	console.log(main);

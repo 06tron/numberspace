@@ -4,8 +4,8 @@
 
 <head>
 	<title>Number Space</title>
-	<script src="ns_polygons.js"></script>
-	<script src="ns_functions.js"></script>
+	<script src="square_mesh_nav.js"></script>
+	<script src="polygon_vertices.js"></script>
 	<script>
 
 		function onLoad() {
@@ -30,62 +30,16 @@
 				tileY = 0;
 			};
 
-			// const tileY1 = createTile("white", dieFace("lightcoral"), pipCC);
-			// const tileY2 = createTile("white", dieFace("lightsteelblue"), pipTR, pipBL);
-			// const tileY3 = createTile("white", dieFace("yellow"), pipTR, pipCC, pipBL);
-			// const tileY4 = createTile("white", dieFace("plum"), pipTL, pipTR, pipBL, pipBR);
-			// const tileY5 = createTile("white", dieFace("lightgreen"), pipTL, pipTR, pipCC, pipBL, pipBR);
-			// const tileY6 = createTile("white", dieFace("pink"), pipTL, pipTR, pipCL, pipCR, pipBL, pipBR);
-			// tileY3.linkTo(tileY6, getOri(0), getDir(2));
-			// tileY6.linkTo(tileY5, getOri(0), getDir(0));
-			// tileY5.linkTo(tileY1, getOri(0), getDir(0));
-			// tileY1.linkTo(tileY2, getOri(0), getDir(0));
-			// tileY2.linkTo(tileY6, getOri(0), getDir(0));
-			// tileY6.linkTo(tileY4, getOri(0), getDir(2));
-			// tileY3.linkTo(tileY5, getOri(6), getDir(0));
-			// tileY3.linkTo(tileY1, getOri(3), getDir(3));
-			// tileY3.linkTo(tileY2, getOri(5), getDir(1));
-			// tileY4.linkTo(tileY5, getOri(5), getDir(0));
-			// tileY4.linkTo(tileY1, getOri(3), getDir(2));
-			// tileY4.linkTo(tileY2, getOri(6), getDir(1));
-			// const tileT0 = createTile("white", dieFace("lightcoral"));
-			// const tileT1 = createTile("white", dieFace("lightsteelblue"));
-			// const tileT2 = createTile("white", dieFace("yellow"));
-			// const tileT3 = createTile("white", dieFace("plum"));
-			// const tileT4 = createTile("white", dieFace("lightgreen"));
-			// const tileT5 = createTile("white", dieFace("pink"));
-			// const tileT6 = createTile("white", dieFace("yellow"), pipCC);
-			// const tileT7 = createTile("white", dieFace("plum"), pipCC);
-			// const tileT8 = createTile("white", dieFace("lightgreen"), pipCC);
-			// const tileT9 = createTile("white", dieFace("pink"), pipCC);
-			// tileT0.linkTo(tileT1, getOri(0), getDir(2));
-			// tileT1.linkTo(tileT2, getOri(0), getDir(2));
-			// tileT1.linkTo(tileT3, getOri(6), getDir(0));
-			// tileT2.linkTo(tileT3, getOri(0), getDir(0));
-			// tileT3.linkTo(tileT4, getOri(0), getDir(0));
-			// tileT3.linkTo(tileT7, getOri(0), getDir(2));
-			// tileT4.linkTo(tileT5, getOri(5), getDir(2));
-			// tileT5.linkTo(tileT6, getOri(0), getDir(3));
-			// tileT5.linkTo(tileT8, getOri(0), getDir(2));
-			// tileT5.linkTo(tileT9, getOri(6), getDir(0));
-			// tileT7.linkTo(tileT8, getOri(0), getDir(0));
-			// tileT8.linkTo(tileT9, getOri(0), getDir(0));
-			// const tileL0 = createTile("white", dieFace("lightcoral"));
-			// const tileL1 = createTile("white", dieFace("lightsteelblue"));
-			// const tileL2 = createTile("white", dieFace("yellow"));
-			// tileL0.linkTo(tileL1, getOri(0), getDir(0));
-			// tileL0.linkTo(tileL1, getOri(0), getDir(2));
-			// tileL1.linkTo(tileL2, getOri(0), getDir(0));
-			// tileL1.linkTo(tileL2, getOri(0), getDir(2));
-			const tileT1 = createTile("white", dieFace("lightsteelblue"));
-			const tileT2 = createTile("white", dieFace("yellow"));
-			const tileT3 = createTile("white", dieFace("plum"));
-			const tileT4 = createTile("white", dieFace("lightgreen"));
-			const tileT5 = createTile("white", dieFace("pink"));
-			const tileT6 = createTile("white", dieFace("lightcoral"));
-			const tileT7 = createTile("white", dieFace("red"));
-			const tileT8 = createTile("white", dieFace("green"));
-			const tileT9 = createTile("white", dieFace("blue"));
+			const sudokuSquare = tileFace("lightsteelblue");
+			const tileT1 = createTile("white", sudokuSquare);
+			const tileT2 = createTile("white", sudokuSquare);
+			const tileT3 = createTile("white", sudokuSquare);
+			const tileT4 = createTile("white", sudokuSquare);
+			const tileT5 = createTile("white", sudokuSquare);
+			const tileT6 = createTile("white", sudokuSquare);
+			const tileT7 = createTile("white", sudokuSquare);
+			const tileT8 = createTile("white", sudokuSquare);
+			const tileT9 = createTile("white", sudokuSquare);
 			tileT1.linkTo(tileT2, getOri(5), getDir(1));
 			tileT1.linkTo(tileT3, getOri(0), getDir(2));
 			tileT1.linkTo(tileT4, getOri(6), getDir(0));
@@ -98,12 +52,6 @@
 			tileT6.linkTo(tileT9, getOri(5), getDir(2));
 			tileT7.linkTo(tileT8, getOri(0), getDir(0));
 			tileT7.linkTo(tileT9, getOri(0), getDir(2));
-			
-
-			// game starts with single tile visible in the center of the the screen
-			// once the mouse is within that tile, draw the tile tree (reveal the tree edges with expanding circle)
-			// function to detect when mouse leaves current square
-			// should mouse have max speed? could it skip around when moving too quickly?
 
 			const len = 100;
 			const midX = (canvas.width - len) / 2;
@@ -138,20 +86,15 @@
 					onTile = true;
 				}
 				const pTL = { x: midX + tileX * len, y: midY + tileY * len };
-				let limits = [xLim - tileX, xLim + tileX, yLim - tileY, yLim + tileY];
-				if (limits.some(lim => lim < 0)) {
-					limits = [1, 1, 1, 1];
-				}
+				const limits = [
+					xLim - tileX, xLim + tileX,
+					yLim - tileY, yLim + tileY
+				];
 				if (onTile) {
-					// let limits = [xLim - tileX, xLim + tileX, yLim - tileY, yLim + tileY];
-					// if (limits.some(lim => lim < 0)) {
-					// 	limits = [1, 1, 1, 1];
-					// }
 					tileTree(walk, pTL, mouse, len, limits, context);
 				} else {
-					tileTree(walk, pTL, { x: pTL.x + len / 2, y: pTL.y + len / 2}, len, limits, context);
-					// const updater = getUpdater(pTL, len, walk.currOri());
-					// walk.currTile().draw(updater, yAxis, xAxis, context);
+					const midTile = { x: pTL.x + len / 2, y: pTL.y + len / 2 };
+					tileTree(walk, pTL, midTile, len, limits, context);
 				}
 			}
 
