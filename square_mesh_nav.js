@@ -355,6 +355,9 @@ function createTile(baseFillStyle, ...polygons) {
 		draw: function (updater, edgeL, edgeR, ctx) {
 			polygons.forEach(p => drawPolygon(p, edgeL, edgeR, updater, ctx));
 		},
+		setBaseFillStyle(bfs) {
+			polygons[0].fillStyle = bfs;
+		},
 		addPolygon: function (p) {
 			polygons.push(p);
 			return this;
@@ -551,7 +554,7 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 	walk.from(startTile, startOri);
 }
 
-// /* use 'Cmd'+'/' here to toggle testing
+/* use 'Cmd'+'/' here to toggle testing
 
 (function main() {
 	console.log(main);

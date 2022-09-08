@@ -29,38 +29,22 @@
 				tileX = 0;
 				tileY = 0;
 			};
+			const backColor = "#1E1E1E"
+			const tileM1 = createTile(backColor, ...sudoTile(3, 0, 0, 0));
+			const tileM2 = createTile(backColor, ...sudoTile(1, 0, 0, 4));
+			const tileM3 = createTile(backColor, ...sudoTile(4, 0, 0, 0));
+			tileM1.linkTo(tileM2, getOri(0), getDir(2));
+			tileM1.linkTo(tileM3, getOri(6), getDir(0));
+			tileM2.linkTo(tileM3, getOri(0), getDir(0));
 
-			const sudokuSquare = tileFace("lightsteelblue");
-			const tileT1 = createTile("white", sudokuSquare);
-			const tileT2 = createTile("white", sudokuSquare);
-			const tileT3 = createTile("white", sudokuSquare);
-			const tileT4 = createTile("white", sudokuSquare);
-			const tileT5 = createTile("white", sudokuSquare);
-			const tileT6 = createTile("white", sudokuSquare);
-			const tileT7 = createTile("white", sudokuSquare);
-			const tileT8 = createTile("white", sudokuSquare);
-			const tileT9 = createTile("white", sudokuSquare);
-			tileT1.linkTo(tileT2, getOri(5), getDir(1));
-			tileT1.linkTo(tileT3, getOri(0), getDir(2));
-			tileT1.linkTo(tileT4, getOri(6), getDir(0));
-			tileT2.linkTo(tileT3, getOri(0), getDir(0));
-			tileT3.linkTo(tileT4, getOri(0), getDir(0));
-			tileT3.linkTo(tileT8, getOri(0), getDir(2));
-			tileT5.linkTo(tileT6, getOri(5), getDir(1));
-			tileT5.linkTo(tileT7, getOri(0), getDir(2));
-			tileT6.linkTo(tileT7, getOri(0), getDir(0));
-			tileT6.linkTo(tileT9, getOri(5), getDir(2));
-			tileT7.linkTo(tileT8, getOri(0), getDir(0));
-			tileT7.linkTo(tileT9, getOri(0), getDir(2));
-
-			const len = 100;
+			const len = 200;
 			const midX = (canvas.width - len) / 2;
 			const midY = (canvas.height - len) / 2;
 			let tileX = 0;
 			let tileY = 0;
 			const xLim = Math.ceil(midX / len);
 			const yLim = Math.ceil(midY / len);
-			const walk = startWalk(tileT1, getOri(0));
+			const walk = startWalk(tileM1, getOri(0));
 			let onTile = false;
 			const xAxis = { a: { x: 0, y: 0 }, b: { x: 1, y: 0 } };
 			const yAxis = { a: { x: 0, y: 0 }, b: { x: 0, y: 1 } };
@@ -90,12 +74,14 @@
 					xLim - tileX, xLim + tileX,
 					yLim - tileY, yLim + tileY
 				];
+				walk.currTile().setBaseFillStyle("#505050");
 				if (onTile) {
 					tileTree(walk, pTL, mouse, len, limits, context);
 				} else {
 					const midTile = { x: pTL.x + len / 2, y: pTL.y + len / 2 };
 					tileTree(walk, pTL, midTile, len, limits, context);
 				}
+				walk.currTile().setBaseFillStyle(backColor);
 			}
 
 			const times = [];
@@ -103,13 +89,14 @@
 
 			function drawInfo() {
 				const str = "(" + tileX + ", " + tileY + ") fps: " + fps;
+				context.fillStyle = "white";
 				context.fillText(str, canvas.width - 100, 20);
 			}
 
 			(function animate() {
 				context.clearRect(0, 0, canvas.width, canvas.height);
 				drawScene();
-				if (debugMode) {
+				if (true) {
 					const now = performance.now();
 					while (times.length > 0 && times[0] <= now - 1000) {
 						times.shift();
@@ -132,6 +119,7 @@
 		* {
 			margin: 0;
 			padding: 0;
+			background-color: #1E1E1E;
 		}
 	</style>
 </body>
