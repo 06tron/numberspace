@@ -164,22 +164,22 @@ function getDir(i) {
  * @returns {PointUpdater} A function which takes a point in the input square
  * and returns its corresponding point in the output square.
  */
-function getUpdater(topLeft, sideLength, orient) {
+function getUpdater(tlx, tly, sideLength, orient) {
 	const updateX = orient.negativeH ? (n => 1 - n) : (n => n);
 	const updateY = orient.negativeV ? (n => 1 - n) : (n => n);
-	if (orient.verticalX) {
+	if (orient.verticalX) { // TODO: add topLeft comments
 		return function updater(xCoord, yCoord) {
 			return {
-				x: sideLength * updateX(yCoord) + topLeft.x,
-				y: sideLength * updateY(xCoord) + topLeft.y,
+				x: sideLength * updateX(yCoord) + tlx,
+				y: sideLength * updateY(xCoord) + tly,
 				outL: false, outR: false
 			};
 		};
 	}
 	return function updater(xCoord, yCoord) {
 		return {
-			x: sideLength * updateX(xCoord) + topLeft.x,
-			y: sideLength * updateY(yCoord) + topLeft.y,
+			x: sideLength * updateX(xCoord) + tlx,
+			y: sideLength * updateY(yCoord) + tly,
 			outL: false, outR: false
 		};
 	};
@@ -312,7 +312,7 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * @property {TileDrawer} draw - Draws this tile, making use of edges which
  * control how much of the tile is drawn.
  * @property {(p: VertexArrayPolygon) => Tile} addPolygon - A function used to
- * add polygons to this tile's polygon array. Updates and returns this tile.
+ * add polygons to this tile's polygon array. TODO: remove addPolygon
  * @property {Tile[]} nei - The four tiles adjacent to this one.
  * @property {SquareSymmetry[]} rel - The orientations of the neighbor tiles
  * relative to this tile in its default orientation.
@@ -323,20 +323,17 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
 /**
  * A tile constructing function, takes a list of polygons, and also creates the
  * background polygon, which is simply a square the size of the tile.
- * @param {string | CanvasGradient | CanvasPattern } baseFillStyle - A property
+ * @param {string | CanvasGradient | CanvasPattern } [baseFillStyle] - A property
  * of the Canvas 2D API which specifies the color, gradient, or pattern to use
- * when drawing the created tile's background.
- * @param {...VertexArrayPolygon} polygons - The polygons that make up the
- * visual content of this tile.
+ * when drawing the created tile's background. TODO: update comments
+ * @param {VertexArrayPolygon} polygons - The polygons that make up the visual
+ * content of this tile.
  * @returns {Tile} The constructed tile object, with no connections.
  */
-function createTile(baseFillStyle, ...polygons) {
-	polygons.unshift({
-		fillStyle: baseFillStyle,
-		verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
-	});
+function createTile(polygons, name = "tile_string") {
 	const neighbors = new Array(4).fill({ isEmpty: () => true });
 	const relations = new Array(4).fill(null);
+	let parent = null;
 	return {
 		isEmpty: () => false,
 		linkTo: function (target, ori, dir, andBack = true) {
@@ -355,16 +352,17 @@ function createTile(baseFillStyle, ...polygons) {
 		draw: function (updater, edgeL, edgeR, ctx) {
 			polygons.forEach(p => drawPolygon(p, edgeL, edgeR, updater, ctx));
 		},
-		setBaseFillStyle(bfs) {
-			polygons[0].fillStyle = bfs;
+		insertBase: function (baseFillStyle) {
+			polygons.unshift({
+				fillStyle: baseFillStyle,
+				verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
+			});
 		},
-		addPolygon: function (p) {
-			polygons.push(p);
-			return this;
-		},
+		setParent: p => parent = p,
+		getParent: () => parent,
 		nei: neighbors,
 		rel: relations,
-		toString: () => baseFillStyle.toString()
+		toString: () => name
 	}
 }
 
@@ -418,7 +416,7 @@ function takeStep(ori, rel) {
 function startWalk(tile, orient) {
 	return {
 		canContinue: () => !tile.isEmpty(),
-		attempt: function (direct) {
+		attempt: function (direct) { // TODO: comment attempt
 			const i = direct.transferTo(orient).index();
 			if (tile.rel[i] != null) {
 				orient = takeStep(orient, tile.rel[i]);
@@ -523,7 +521,7 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 			if (i == 0 || yRem != yLim && (i < 3 || xRem != xLim)) {
 				nextX = cx + len * cr * crSign;
 				nextY = cy + len * cb * cbSign;
-				const updater = getUpdater({ x: nextX, y: nextY }, len, orient);
+				const updater = getUpdater(nextX, nextY, len, orient);
 				tile.draw(updater, edgeL, edgeR, context);
 			}
 			walk.to(directions[i]);
