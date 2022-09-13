@@ -75,11 +75,13 @@ function lineIntersectSegment(p, q, { a, b }) {
  * given booleans.
  */
 function square(negH, negV, verX) {
+	const i = negH + negV * 2 + verX * 4;
 	return {
 		negativeH: negH,
 		negativeV: negV,
 		verticalX: verX,
-		toString: () => (negH + negV * 2 + verX * 4).toString()
+		index: () => i,
+		toString: () => i.toString()
 	};
 }
 

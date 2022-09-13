@@ -1,79 +1,53 @@
-function gridWalk(block) {
-	const walk = startWalk(block.tile, getOri(0));
-	const cell = { x: 0, y: 0 };
-	const n = 2; // TODO: make this a parameter somewhere
+function walkS2(block, ori) {
+	block.select(0, ori); // TODO: always select the right cell
+	const walk = startWalk(block.tile, ori);
+	const cell = [0, 0];
 	return {
-		attempt: function (di) {
-			const d = getDir(di);
-			let value = true;
-			if (d.isVertical) {
-				if (d.isNegative) {
-					if (cell.y == 0) {
-						cell.y = n - 1;
-						value = walk.attempt(d);
-						// move up
-					} else {
-						--cell.y;
-					}
-				} else {
-					if (cell.y == n - 1) {
-						cell.y = 0;
-						value = walk.attempt(d);
-						// move down
-					} else {
-						++cell.y;
-					}
+		attempt: function (dirIndex) {
+			const dir = getDir(dirIndex);
+			walk.currTile().getParent().deselect();
+			const i = dir.isVertical ? 1 : 0;
+			let success = true;
+			if (cell[i] != dir.isNegative) {
+				if (success = walk.attempt(dir)) {
+					cell[i] = dir.isNegative;
 				}
 			} else {
-				if (d.isNegative) {
-					if (cell.x == 0) {
-						cell.x = n - 1;
-						value = walk.attempt(d);
-						// move left
-					} else {
-						--cell.x;
-					}
-				} else {
-					if (cell.x == n - 1) {
-						cell.x = 0;
-						value = walk.attempt(d);
-						// move right
-					} else {
-						++cell.x;
-					}
-				}
+				cell[i] += dir.isNegative ? -1 : 1;
 			}
-			walk.currTile().getParent().select(cell.x + 2 * cell.y);
-			return value;
+			const quad = cell[0] + cell[1] * 2;
+			walk.currTile().getParent().select(quad, walk.currOri());
+			return success;
 		},
 		tileWalk: () => walk
 	}
 }
 
-function sudokuBlock(grid) {
+function regionS2(cells) {
 	const keys = [];
 	const values = [];
-	for (let i = 0; i < grid.length; ++i) {
+	for (let i = 0; i < cells.length; ++i) {
 		keys.push(i);
-		const cellColor = (grid[i] > 0) ? "lightsteelblue" : "white";
-		values.push(cellPolygon(vertexArrays.cell, i, cellColor));
-		if (grid[i] > 0) {
-			keys.push(i + grid.length);
-			values.push(getGlyph(grid[i] - 1, i));
+		const cellColor = (cells[i] > 0) ? "lightsteelblue" : "white";
+		values.push(polygonS2("cell", cellColor, i));
+		if (cells[i] > 0) {
+			keys.push(i + cells.length);
+			values.push(polygonS2("glyph", "black", i, cells[i] - 1));
 		}
 	}
-	const tile = createTile(values, grid.join());
+	const tile = createTile(values, cells.join());
 	const block = {
 		tile: tile,
 		linkTo: function (target, oi, di) {
 			tile.linkTo(target.tile, getOri(oi), getDir(di));
 		},
-		select: function (idx) {
-			keys.unshift(grid.length * 2);
-			values.unshift(cellPolygon(vertexArrays.selection, idx, "#505050"));
+		select: function (quad, ori) {
+			const idx = quad ^ (ori.index() % 4); // TODO: fix this
+			keys.unshift(cells.length * 2);
+			values.unshift(polygonS2("select", "#505050", idx));
 		},
 		deselect: function () {
-			const rem = keys.indexOf(grid.length * 2);
+			const rem = keys.indexOf(cells.length * 2);
 			if (rem > -1) {
 				keys.splice(rem, 1);
 				values.splice(rem, 1);
@@ -84,38 +58,25 @@ function sudokuBlock(grid) {
 	return block;
 }
 
-function cellPolygon(vertices, b, color) {
-	const v = [...vertices];
-	for (let i = 0; i < v.length; i += 2) {
-		if (b % 2 > 0) {
-			v[i] += 0.48;
-		}
-		if (b > 1) {
-			v[i + 1] += 0.48;
-		}
-	}
-	return { fillStyle: color, verts: v };
-}
-
-function getGlyph(b1, b2) {
-	const glyph = [...vertexArrays.uGlyph];
-	for (let i = 0; i < glyph.length; i += 2) {
-		const flip = b1 % 2 > 0;
+function polygonS2(name, fillStyle, quad, facing = 0) {
+	const verts = [...vertexArrays.S2[name]];
+	for (let i = 0; i < verts.length; i += 2) {
+		const flip = facing % 2 > 0;
 		if (flip) {
-			temp = glyph[i];
-			glyph[i] = glyph[i + 1];
-			glyph[i + 1] = temp;
+			let temp = verts[i];
+			verts[i] = verts[i + 1];
+			verts[i + 1] = temp;
 		}
-		if (b1 > 1) {
+		if (facing > 1) {
 			const j = flip ? i : i + 1;
-			glyph[j] = 0.52 - glyph[j];
+			verts[j] = 0.52 - verts[j];
 		}
-		if (b2 % 2 > 0) {
-			glyph[i] += 0.48;
+		if (quad % 2 > 0) {
+			verts[i] += 0.48;
 		}
-		if (b2 > 1) {
-			glyph[i + 1] += 0.48;
+		if (quad > 1) {
+			verts[i + 1] += 0.48;
 		}
 	}
-	return { fillStyle: "black", verts: glyph };
+	return { fillStyle: fillStyle, verts: verts };
 }

@@ -27,41 +27,40 @@
 			canvas.onclick = function (event) {
 				// debugMode = !debugMode;
 				onTile = false;
-				tileX = 0;
-				tileY = 0;
+				cellX = 0;
+				cellY = 0;
 			};
 
-			const b1 = sudokuBlock([4, 0, 0, 0]);
-			const b2 = sudokuBlock([0, 1, 0, 0]);
+			const b1 = regionS2([4, 0, 0, 0]);
+			const b2 = regionS2([0, 1, 0, 0]);
 			b1.linkTo(b2, 0, 2);
 			b1.linkTo(b2, 3, 0);
 
 			const len = 200;
-			const half = len / 2;
-			const midX = (canvas.width - len) / 2;
-			const midY = (canvas.height - len) / 2;
-			let tileX = 0;
-			let tileY = 0;
-			const xLim = Math.ceil(midX / len);
-			const yLim = Math.ceil(midY / len);
-			const walk = gridWalk(b1);
+			const sx = canvas.width / 2 - len;
+			const sy = canvas.height / 2 - len;
+			let cellX = 0;
+			let cellY = 0;
+			// const xLim = Math.ceil(sx / len);
+			// const yLim = Math.ceil(sy / len);
+			const walk = walkS2(b1, getOri(0));
 			let onTile = false;
 			const xAxis = { a: { x: 0, y: 0 }, b: { x: 1, y: 0 } };
 			const yAxis = { a: { x: 0, y: 0 }, b: { x: 0, y: 1 } };
 
 			function drawScene() {
-				const dx = Math.floor((mouse.x - midX) / half) - tileX;
-				const dy = Math.floor((mouse.y - midY) / half) - tileY;
+				const dx = Math.floor(2 * (mouse.x - sx) / len) - cellX;
+				const dy = Math.floor(2 * (mouse.y - sy) / len) - cellY;
 				if (onTile) {
 					if (dx != 0) {
 						if (walk.attempt(dx > 0 ? 0 : 1)) {
-							tileX += dx;
+							cellX += Math.sign(dx);
 						} else {
 							onTile = false;
 						}
 					} else if (dy != 0) {
 						if (walk.attempt(dy > 0 ? 2 : 3)) {
-							tileY += dy;
+							cellY += Math.sign(dy);
 						} else {
 							onTile = false;
 						}
@@ -69,15 +68,12 @@
 				} else if (dx == 0 && dy == 0) {
 					onTile = true;
 				}
-				const pTL = { x: midX + Math.floor(tileX / 2) * len, y: midY + Math.floor(tileY / 2) * len };
-				const limits = [
-					xLim - Math.floor(tileX / 2), xLim + Math.floor(tileX / 2),
-					yLim - Math.floor(tileY / 2), yLim + Math.floor(tileY / 2)
-				];
+				const pTL = { x: sx + Math.floor(cellX / 2) * len, y: sy + Math.floor(cellY / 2) * len };
+				const limits = [2, 2, 2, 2];
 				if (onTile) {
 					tileTree(walk.tileWalk(), pTL, mouse, len, limits, context);
 				} else {
-					const mid = { x: pTL.x + half, y: pTL.y + half };
+					const mid = { x: pTL.x + len / 2, y: pTL.y + len / 2 };
 					tileTree(walk.tileWalk(), pTL, mid, len, limits, context);
 				}
 			}
@@ -86,7 +82,7 @@
 			let fps;
 
 			function drawInfo() {
-				const str = "(" + tileX + ", " + tileY + ") fps: " + fps;
+				const str = "(" + cellX + ", " + cellY + ") fps: " + fps;
 				context.fillStyle = "white";
 				context.fillText(str, canvas.width - 100, 20);
 			}
