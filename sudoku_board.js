@@ -40,6 +40,14 @@ function walkS2(region, ori) {
 			walk.currTile().getParent().select(quadrant, walk.currOri());
 			return success;
 		},
+		write: function (facing) {
+			const quadrant = cell[0] + cell[1] * 2;
+			walk.currTile().getParent().setGlyph(quadrant, facing);
+		},
+		clear: function () {
+			const quadrant = cell[0] + cell[1] * 2;
+			walk.currTile().getParent().setGlyph(quadrant);
+		},
 		tileWalk: () => walk
 	}
 }
@@ -55,7 +63,7 @@ function walkS2(region, ori) {
  * @returns {SudokuRegion}
  */
 function regionS2(cells) {
-	const keys = [];
+	const keys = []; // TODO: make this more of a full data structure
 	const values = [];
 	for (let i = 0; i < cells.length; ++i) {
 		const cellColor = (cells[i] > 0) ? "lightsteelblue" : "white";
@@ -97,6 +105,26 @@ function regionS2(cells) {
 			if (rem > -1) {
 				keys.splice(rem, 1);
 				values.splice(rem, 1);
+			}
+		},
+		setGlyph: function (quadrant, facing = null) { // TODO: have a better way to not overwrite the clues
+			const prev = keys.indexOf(quadrant + cells.length);
+			if (facing == null) {
+				if (prev > -1) {
+					const base = keys.indexOf(quadrant);
+					if (base > -1 && values[base].fillStyle == "white") {
+						keys.splice(prev, 1);
+						values.splice(prev, 1);
+					}
+				}
+				return;
+			}
+			const next = polygonS2("glyph", "black", quadrant, facing);
+			if (prev > -1) {
+				values[prev] = next;
+			} else {
+				keys.push(quadrant + cells.length);
+				values.push(next);
 			}
 		}
 	};

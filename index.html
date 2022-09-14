@@ -24,13 +24,6 @@
 				mouse.y = event.clientY;
 			};
 
-			canvas.onclick = function (event) {
-				// debugMode = !debugMode;
-				onTile = false;
-				cellX &= 1;
-				cellY &= 1;
-			};
-
 			const b1 = regionS2([4, 0, 0, 0]);
 			const b2 = regionS2([0, 1, 0, 0]);
 			b1.linkTo(b2, 0, 2);
@@ -78,6 +71,23 @@
 				}
 			}
 
+			canvas.onclick = function (event) {
+				onTile = false;
+				cellX &= 1;
+				cellY &= 1;
+			};
+
+			window.addEventListener("keydown", function (event) {
+				switch (event.key) {
+					case 'd': debugMode = !debugMode; break;
+					case 'n': walk.clear(); break;
+					case 'm': walk.write(0); break;
+					case ',': walk.write(1); break;
+					case '.': walk.write(2); break;
+					case '/': walk.write(3);
+				}
+			});
+
 			const times = [];
 			let fps;
 
@@ -90,7 +100,7 @@
 			(function animate() {
 				context.clearRect(0, 0, canvas.width, canvas.height);
 				drawScene();
-				if (true) {
+				if (debugMode) {
 					const now = performance.now();
 					while (times.length > 0 && times[0] <= now - 1000) {
 						times.shift();
