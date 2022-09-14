@@ -79,6 +79,7 @@ function square(negH, negV, verX) {
 		negativeH: negH,
 		negativeV: negV,
 		verticalX: verX,
+		index: () => negH + negV * 2 + verX * 4,
 		toString: () => (negH + negV * 2 + verX * 4).toString()
 	};
 }
@@ -351,7 +352,11 @@ function createTile(polygons, name = "tile_string") {
 			return this;
 		},
 		draw: function (updater, edgeL, edgeR, ctx) {
-			polygons.forEach(p => drawPolygon(p, edgeL, edgeR, updater, ctx));
+			polygons.forEach(function (p) {
+				if (p != null) {
+					drawPolygon(p, edgeL, edgeR, updater, ctx);
+				}
+			});
 		},
 		/**
 		 * Inserts a background polygon, which is simply a square the size of
@@ -619,3 +624,30 @@ function test_walkTo(abc) {
 }
 
 // */
+
+function forcedAns(idx, ori) {
+	return [
+		[0, 1,
+		 2, 3],
+		[1, 0,
+		 3, 2],
+		[2, 3,
+		 0, 1],
+		[3, 2,
+		 1, 0],
+		[0, 2,
+		 1, 3],
+		[2, 0,
+		 3, 1],
+		[1, 3,
+		 0, 2],
+		[3, 1,
+		 2, 0]
+	][ori.index()][idx];
+}
+
+function justS2(idx, ori) {
+	let row = (idx >> 1) ^ ori.negativeV;
+	let col = (idx & 1) ^ ori.negativeH;
+	return ori.verticalX ? (row + col * 2) : (row * 2 + col);
+}

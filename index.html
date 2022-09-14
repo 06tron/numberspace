@@ -28,6 +28,11 @@
 			const b2 = regionS2([0, 1, 0, 0]);
 			b1.linkTo(b2, 0, 2);
 			b1.linkTo(b2, 3, 0);
+			// const variants = symbolVariants(4, [0, 0, 1, 0, 1, 1, 0, 1, 0, 0], 20);
+			// console.log(variants);
+			// const test = createTile(variants.map(x => ({ fillStyle: "white", verts: x })));
+			// test.insertBase("red");
+			// b1.tile.linkTo(test, getOri(0), getDir(1));
 
 			const len = 200;
 			const sx = canvas.width / 2 - len;

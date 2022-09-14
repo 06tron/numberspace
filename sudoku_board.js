@@ -1,7 +1,61 @@
+function regionIndex(size, screenIndex, ori) {
+	let row = Math.floor(screenIndex / size);
+	let col = screenIndex % size;
+	if (ori.negativeH) {
+		col = size - 1 - col;
+	}
+	if (ori.negativeV) {
+		row = size - 1 - row;
+	}
+	return ori.verticalX ? (row + col * size) : (row * size + col);
+}
+
+// sudoku region: keys [0, size-1] are cells, keys [size, 2*size-1] are glyphs, and key 2*size is selection.
+
 /**
  * @typedef SudokuRegion
  * @property {Tile} tile
  */
+
+// verts describes the symbol centered in the unit square
+function symbolVariants(size, verts, cellSize) {
+	const smallStep = 1 / (size * cellSize + size + 1);
+	verts = verts.map(x => smallStep * (x * cellSize + 1));
+	const largeStep = smallStep * (cellSize + 1);
+	const variants = [];
+	for (let r = 0; r < size; ++r) {
+		for (let c = 0; c < size; ++c) {
+			const copy = [];
+			for (let i = 0; i < verts.length; i += 2) {
+				copy.push(verts[i] + c * largeStep);
+				copy.push(verts[i + 1] + r * largeStep);
+			}
+			variants.push(copy);
+		}
+	}
+	return variants;
+}
+
+function createRegion(size, cells, symbols) {
+	const area = size * size;
+	const features = new Array(1 + area * 2).fill(null);
+	for (let i = 0; i < area; ++i) {
+		features[1 + i] = polygonS2; // white cell, calculate verts based on region size
+		if (cells[i] > 0) {
+			features[1 + i].fillStyle = "lightsteelblue";
+			features[1 + area + i] = polygonS2(symbols[cells[i]]); // cells[i] is the index of the symbol to be drawn here
+		}
+	}
+	const tile = createTile(features, cells.join());
+	const region = {
+		tile: tile,
+		linkTo: function (target, oriIndex, dirIndex) {
+			tile.linkTo(target.tile, getOri(oriIndex), getDir(dirIndex));
+		}
+	};
+	tile.setParent(region);
+	return region;
+}
 
 /**
  * @typedef SudokuWalk
@@ -63,7 +117,7 @@ function walkS2(region, ori) {
  * @returns {SudokuRegion}
  */
 function regionS2(cells) {
-	const keys = []; // TODO: make this more of a full data structure
+	const keys = [];
 	const values = [];
 	for (let i = 0; i < cells.length; ++i) {
 		const cellColor = (cells[i] > 0) ? "lightsteelblue" : "white";
@@ -92,10 +146,9 @@ function regionS2(cells) {
 		 * @param {SquareSymmetry} ori 
 		 */
 		select: function (quadrant, ori) {
-			const c1 = quadrant ^ (ori.negativeH + ori.negativeV * 2);
-			const c2 = ori.verticalX ? (c1 == 1 ? 2 : (c1 == 2 ? 1 : c1)) : c1;
+			const c = regionIndex(2, quadrant, ori);
 			keys.unshift(cells.length * 2);
-			values.unshift(polygonS2("select", "#505050", c2));
+			values.unshift(polygonS2("select", "#505050", c));
 		},
 		/**
 		 * Deselection comment
@@ -107,7 +160,7 @@ function regionS2(cells) {
 				values.splice(rem, 1);
 			}
 		},
-		setGlyph: function (quadrant, facing = null) { // TODO: have a better way to not overwrite the clues
+		setGlyph: function (quadrant, facing = null) {
 			const prev = keys.indexOf(quadrant + cells.length);
 			if (facing == null) {
 				if (prev > -1) {
@@ -145,7 +198,7 @@ function polygonS2(name, fillStyle, quadrant, facing = 0) {
 	for (let i = 0; i < verts.length; i += 2) {
 		const swap = facing & 1;
 		if (swap) {
-			let temp = verts[i];
+			const temp = verts[i];
 			verts[i] = verts[i + 1];
 			verts[i + 1] = temp;
 		}
