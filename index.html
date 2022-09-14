@@ -27,8 +27,8 @@
 			canvas.onclick = function (event) {
 				// debugMode = !debugMode;
 				onTile = false;
-				cellX = 0;
-				cellY = 0;
+				cellX &= 1;
+				cellY &= 1;
 			};
 
 			const b1 = regionS2([4, 0, 0, 0]);

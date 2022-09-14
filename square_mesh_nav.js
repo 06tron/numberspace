@@ -75,13 +75,11 @@ function lineIntersectSegment(p, q, { a, b }) {
  * given booleans.
  */
 function square(negH, negV, verX) {
-	const i = negH + negV * 2 + verX * 4;
 	return {
 		negativeH: negH,
 		negativeV: negV,
 		verticalX: verX,
-		index: () => i,
-		toString: () => i.toString()
+		toString: () => (negH + negV * 2 + verX * 4).toString()
 	};
 }
 
@@ -159,7 +157,8 @@ function getDir(i) {
  * point in the input space will be transformed (scaled, translated, rotated, or
  * reflected) into a new point in the output space. The output space is a square
  * defined by the given side length and top left point.
- * @param {Point} topLeft - The the top left point of the output square.
+ * @param {number} tlx - The x-coordinate of the output square's top left point.
+ * @param {number} tly - The y-coordinate of the output square's top left point.
  * @param {number} sideLength - The side length of the output square.
  * @param {SquareSymmetry} orient - One of eight different ways to rotate and
  * reflect the input.
@@ -169,7 +168,7 @@ function getDir(i) {
 function getUpdater(tlx, tly, sideLength, orient) {
 	const updateX = orient.negativeH ? (n => 1 - n) : (n => n);
 	const updateY = orient.negativeV ? (n => 1 - n) : (n => n);
-	if (orient.verticalX) { // TODO: add topLeft comments
+	if (orient.verticalX) {
 		return function updater(xCoord, yCoord) {
 			return {
 				x: sideLength * updateX(yCoord) + tlx,
@@ -313,23 +312,23 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * then returns this tile. The link can be directed or undirected.
  * @property {TileDrawer} draw - Draws this tile, making use of edges which
  * control how much of the tile is drawn.
- * @property {(p: VertexArrayPolygon) => Tile} addPolygon - A function used to
- * add polygons to this tile's polygon array. TODO: remove addPolygon
+ * @property {(p: Object) => Object} setParent - Allows this tile to hold on to
+ * any given object, which is then called the tile's parent object.
+ * @property {() => Object} getParent - Returns this tile's parent object. If no
+ * parent object is set, this function returns null.
  * @property {Tile[]} nei - The four tiles adjacent to this one.
  * @property {SquareSymmetry[]} rel - The orientations of the neighbor tiles
  * relative to this tile in its default orientation.
- * @property {() => string} toString - Calls the toString method of this tile's
- * internal baseFillStyle variable, which is usually the name of a color.
+ * @property {() => string} toString - Returns the name that was given to this
+ * tile when it was created.
  */
 
 /**
- * A tile constructing function, takes a list of polygons, and also creates the
- * background polygon, which is simply a square the size of the tile.
- * @param {string | CanvasGradient | CanvasPattern } [baseFillStyle] - A property
- * of the Canvas 2D API which specifies the color, gradient, or pattern to use
- * when drawing the created tile's background. TODO: update comments
+ * The tile constructing function.
  * @param {VertexArrayPolygon} polygons - The polygons that make up the visual
- * content of this tile.
+ * content of the constructed tile.
+ * @param {string} [name] - A name can be provided, otherwise the constructed
+ * tile's default name is "tile_string".
  * @returns {Tile} The constructed tile object, with no connections.
  */
 function createTile(polygons, name = "tile_string") {
@@ -354,6 +353,13 @@ function createTile(polygons, name = "tile_string") {
 		draw: function (updater, edgeL, edgeR, ctx) {
 			polygons.forEach(p => drawPolygon(p, edgeL, edgeR, updater, ctx));
 		},
+		/**
+		 * Inserts a background polygon, which is simply a square the size of
+		 * the tile, to the front of the polygons array.
+		 * @param {string | CanvasGradient | CanvasPattern } baseFillStyle - A
+		 * property of the Canvas 2D API which specifies the color, gradient, or
+		 * pattern to use when drawing the created tile's background.
+		 */
 		insertBase: function (baseFillStyle) {
 			polygons.unshift({
 				fillStyle: baseFillStyle,
@@ -398,6 +404,11 @@ function takeStep(ori, rel) {
  * @typedef Walk
  * @property {() => boolean} canContinue - A function that returns false if the
  * current tile is empty, and true otherwise.
+ * @property {(direct: Cardinal) => boolean} attempt - Tries to move in the
+ * given direction, from the current tile to one of it's neighbors. If the
+ * current tile's relation to the destination tile is not defined, then this
+ * walk does not change and this function returns false. Otherwise, the walk is
+ * updated and the function returns true.
  * @property {(direct: Cardinal) => Walk} to - Moves in the given direction from
  * the current tile to one of it's neighbors. The correct neighbor is determined
  * by the current orientation as well as the given direction. Returns this walk.
@@ -418,7 +429,7 @@ function takeStep(ori, rel) {
 function startWalk(tile, orient) {
 	return {
 		canContinue: () => !tile.isEmpty(),
-		attempt: function (direct) { // TODO: comment attempt
+		attempt: function (direct) {
 			const i = direct.transferTo(orient).index();
 			if (tile.rel[i] != null) {
 				orient = takeStep(orient, tile.rel[i]);
@@ -486,7 +497,7 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 	const startOri = walk.currOri();
 	const directions = [0, 2, 0, 3, 2, 1, 3, 1].map(getDir);
 	for (let i = 0; i < 4; ++i) {
-		const cr = i % 2 > 0;
+		const cr = i & 1;
 		const cb = i > 1;
 		const crSign = cr ? -1 : 1;
 		const cbSign = cb ? -1 : 1;
