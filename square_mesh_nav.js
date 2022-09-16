@@ -79,7 +79,6 @@ function square(negH, negV, verX) {
 		negativeH: negH,
 		negativeV: negV,
 		verticalX: verX,
-		index: () => negH + negV * 2 + verX * 4,
 		toString: () => (negH + negV * 2 + verX * 4).toString()
 	};
 }
@@ -313,13 +312,10 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * then returns this tile. The link can be directed or undirected.
  * @property {TileDrawer} draw - Draws this tile, making use of edges which
  * control how much of the tile is drawn.
- * @property {(p: Object) => Object} setParent - Allows this tile to hold on to
- * any given object, which is then called the tile's parent object.
- * @property {() => Object} getParent - Returns this tile's parent object. If no
- * parent object is set, this function returns null.
  * @property {Tile[]} nei - The four tiles adjacent to this one.
  * @property {SquareSymmetry[]} rel - The orientations of the neighbor tiles
  * relative to this tile in its default orientation.
+ * @property {number} id - An identification number for this tile.
  * @property {() => string} toString - Returns the name that was given to this
  * tile when it was created.
  */
@@ -330,9 +326,10 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * content of the constructed tile.
  * @param {string} [name] - A name can be provided, otherwise the constructed
  * tile's default name is "tile_string".
+ * @param {number} [id] - An optional identification number, defaults to -1.
  * @returns {Tile} The constructed tile object, with no connections.
  */
-function createTile(polygons, name = "tile_string") {
+function createTile(polygons, name = "tile_string", id = -1) {
 	const neighbors = new Array(4).fill({ isEmpty: () => true });
 	const relations = new Array(4).fill(null);
 	let parent = null;
@@ -371,10 +368,9 @@ function createTile(polygons, name = "tile_string") {
 				verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
 			});
 		},
-		setParent: p => parent = p,
-		getParent: () => parent,
 		nei: neighbors,
 		rel: relations,
+		id: id,
 		toString: () => name
 	}
 }
@@ -487,7 +483,7 @@ function compareSlope({ a, b }, { a: c, b: d }) {
  * @param {number} len - The side length of a tile.
  * @param {number[]} limits - Two values that limit the viewable area to a
  * rectangle centered on the start tile. The rectangle has a height of
- * (2 * limits.y + 1) tiles and a width of (2 * limits.x + 1) tiles. CHANGE
+ * (2 * limits.y + 1) tiles and a width of (2 * limits.x + 1) tiles. TODO: update this
  * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides
  * the 2D rendering context for the drawing surface of a canvas element.
  */
@@ -624,30 +620,3 @@ function test_walkTo(abc) {
 }
 
 // */
-
-function forcedAns(idx, ori) {
-	return [
-		[0, 1,
-		 2, 3],
-		[1, 0,
-		 3, 2],
-		[2, 3,
-		 0, 1],
-		[3, 2,
-		 1, 0],
-		[0, 2,
-		 1, 3],
-		[2, 0,
-		 3, 1],
-		[1, 3,
-		 0, 2],
-		[3, 1,
-		 2, 0]
-	][ori.index()][idx];
-}
-
-function justS2(idx, ori) {
-	let row = (idx >> 1) ^ ori.negativeV;
-	let col = (idx & 1) ^ ori.negativeH;
-	return ori.verticalX ? (row + col * 2) : (row * 2 + col);
-}

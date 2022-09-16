@@ -1,3 +1,7 @@
+function modulo(a, b) {
+	return ((a % b) + b) % b;
+}
+
 function regionIndex(size, screenIndex, ori) {
 	let row = Math.floor(screenIndex / size);
 	let col = screenIndex % size;
@@ -17,11 +21,116 @@ function regionIndex(size, screenIndex, ori) {
  * @property {Tile} tile
  */
 
+function sudokuGame(size, symbols, margin) {
+	const area = size * size;
+	const cellVerts = symbolVariants(size, vertexArrays.square, margin);
+	const selectVerts = symbolVariants(size, getSelection(margin), margin);
+	const symbolVerts = symbols.map(s => symbolVariants(size, s, margin));
+	const allCells = [[1, 0, 0, 0], [0, 4, 0, 0]];
+	const regions = allCells.map(createRegion);
+	regions[0].linkTo(regions[1], 0, 2);
+	regions[0].linkTo(regions[1], 3, 0);
+	regions[0].select(0, getOri(0));
+	const walk = startWalk(regions[0].tile, getOri(0));
+	const cell = [0, 0];
+	const idx = () => regionIndex(size, cell[0] + cell[1] * size, walk.currOri());
+	const reg = () => regions[walk.currTile().id];
+
+	function createRegion(cells, id) { // size 2 cells is array like: [4, 0, 1, 0]
+		const features = new Array(1 + area * 2).fill(null);
+		for (let i = 0; i < area; ++i) {
+			features[1 + i] = {
+				fillStyle: "white",
+				verts: cellVerts[i]
+			};
+			if (cells[i] > 0) {
+				features[1 + i].fillStyle = "lightsteelblue";
+				features[1 + area + i] = {
+					fillStyle: "black",
+					verts: symbolVerts[cells[i] - 1][i]
+				};
+			}
+		}
+		const tile = createTile(features, cells.join(), id);
+		return {
+			tile: tile,
+			linkTo: function (target, oriIndex, dirIndex) {
+				tile.linkTo(target.tile, getOri(oriIndex), getDir(dirIndex));
+			},
+			select: function (cellIndex) {
+				features[0] = {
+					fillStyle: "#505050",
+					verts: selectVerts[cellIndex]
+				};
+			},
+			deselect: function () {
+				features[0] = null;
+			},
+			setSymbol: function (cellIndex, symbolIndex = -1) {
+				if (cells[cellIndex] == 0) {
+					if (symbolIndex == -1) {
+						features[1 + area + cellIndex] = null;
+					} else {
+						features[1 + area + cellIndex] = {
+							fillStyle: "black",
+							verts: symbolVerts[symbolIndex][cellIndex]
+						};
+					}
+				}
+			}
+		};
+	};
+
+	return {
+		attempt: function (dirIndex) {
+			reg().deselect();
+			const dir = getDir(dirIndex);
+			const coord = dir.isVertical ? 1 : 0;
+			let success = true;
+			if (cell[coord] == (dir.isNegative ? 0 : size - 1)) {
+				if (success = walk.attempt(dir)) {
+					cell[coord] = dir.isNegative ? size - 1 : 0;
+				}
+			} else {
+				cell[coord] += dir.isNegative ? -1 : 1;
+			}
+			reg().select(idx());
+			return success;
+		},
+		write: s => reg().setSymbol(idx(), s),
+		clear: () => reg().setSymbol(idx()),
+		tileWalk: () => walk
+	};
+}
+
+function symbolRotations(verts) {
+	const rotations = [[], [], [], []];
+	for (let i = 0; i < verts.length; i += 2) {
+		for (let j = 0; j < 4; ++j) {
+			const x = (j & 1) ? 1 - verts[i] : verts[i];
+			const y = verts[i + 1];
+			if (j > 1) {
+				rotations[j].push(y);
+				rotations[j].push(x);
+			} else {
+				rotations[j].push(x);
+				rotations[j].push(y);
+			}
+		}
+	}
+	return rotations;
+}
+
+function getSelection(margin) {
+	const step = 1 / margin;
+	return vertexArrays.square.map(v => v ? (1 + step) : -step);
+}
+
 // verts describes the symbol centered in the unit square
-function symbolVariants(size, verts, cellSize) {
-	const smallStep = 1 / (size * cellSize + size + 1);
-	verts = verts.map(x => smallStep * (x * cellSize + 1));
-	const largeStep = smallStep * (cellSize + 1);
+function symbolVariants(size, verts, margin) {
+	const smallStep = 1 / (size * margin + size + 1);
+	verts = verts.map(v => smallStep * (v * margin + 1));
+	const largeStep = smallStep * (margin + 1);
 	const variants = [];
 	for (let r = 0; r < size; ++r) {
 		for (let c = 0; c < size; ++c) {
@@ -36,182 +145,12 @@ function symbolVariants(size, verts, cellSize) {
 	return variants;
 }
 
-function createRegion(size, cells, symbols) {
-	const area = size * size;
-	const features = new Array(1 + area * 2).fill(null);
-	for (let i = 0; i < area; ++i) {
-		features[1 + i] = polygonS2; // white cell, calculate verts based on region size
-		if (cells[i] > 0) {
-			features[1 + i].fillStyle = "lightsteelblue";
-			features[1 + area + i] = polygonS2(symbols[cells[i]]); // cells[i] is the index of the symbol to be drawn here
-		}
-	}
-	const tile = createTile(features, cells.join());
-	const region = {
-		tile: tile,
-		linkTo: function (target, oriIndex, dirIndex) {
-			tile.linkTo(target.tile, getOri(oriIndex), getDir(dirIndex));
-		}
-	};
-	tile.setParent(region);
-	return region;
-}
-
 /**
  * @typedef SudokuWalk
  * @property {() => Walk} tileWalk
  */
 
 /**
- * Begin by selecting the top left of the starting region.
- * @param {SudokuRegion} region 
- * @param {SquareSymmetry} ori 
- * @returns {SudokuWalk}
- */
-function walkS2(region, ori) {
-	region.select(0, ori);
-	const walk = startWalk(region.tile, ori);
-	const cell = [0, 0];
-	return {
-		/**
-		 * 
-		 * @param {number} dirIndex 
-		 * @returns {boolean}
-		 */
-		attempt: function (dirIndex) {
-			const dir = getDir(dirIndex);
-			walk.currTile().getParent().deselect();
-			const coord = dir.isVertical ? 1 : 0;
-			let success = true;
-			if (cell[coord] != dir.isNegative) {
-				if (success = walk.attempt(dir)) {
-					cell[coord] = dir.isNegative;
-				}
-			} else {
-				cell[coord] += dir.isNegative ? -1 : 1;
-			}
-			const quadrant = cell[0] + cell[1] * 2;
-			walk.currTile().getParent().select(quadrant, walk.currOri());
-			return success;
-		},
-		write: function (facing) {
-			const quadrant = cell[0] + cell[1] * 2;
-			walk.currTile().getParent().setGlyph(quadrant, facing);
-		},
-		clear: function () {
-			const quadrant = cell[0] + cell[1] * 2;
-			walk.currTile().getParent().setGlyph(quadrant);
-		},
-		tileWalk: () => walk
-	}
-}
-
-/**
  * 2 bits of information. In this case, used for..
  * @typedef {number} Crumb
  */
-
-/**
- * 
- * @param {number[]} cells 
- * @returns {SudokuRegion}
- */
-function regionS2(cells) {
-	const keys = [];
-	const values = [];
-	for (let i = 0; i < cells.length; ++i) {
-		const cellColor = (cells[i] > 0) ? "lightsteelblue" : "white";
-		keys.push(i);
-		values.push(polygonS2("cell", cellColor, i));
-		if (cells[i] > 0) {
-			keys.push(i + cells.length);
-			values.push(polygonS2("glyph", "black", i, cells[i] - 1));
-		}
-	}
-	const tile = createTile(values, cells.join());
-	const region = {
-		tile: tile,
-		/**
-		 * 
-		 * @param {SudokuRegion} target 
-		 * @param {number} oriIndex 
-		 * @param {number} dirIndex 
-		 */
-		linkTo: function (target, oriIndex, dirIndex) {
-			tile.linkTo(target.tile, getOri(oriIndex), getDir(dirIndex));
-		},
-		/**
-		 * 
-		 * @param {Crumb} quadrant 
-		 * @param {SquareSymmetry} ori 
-		 */
-		select: function (quadrant, ori) {
-			const c = regionIndex(2, quadrant, ori);
-			keys.unshift(cells.length * 2);
-			values.unshift(polygonS2("select", "#505050", c));
-		},
-		/**
-		 * Deselection comment
-		 */
-		deselect: function () {
-			const rem = keys.indexOf(cells.length * 2);
-			if (rem > -1) {
-				keys.splice(rem, 1);
-				values.splice(rem, 1);
-			}
-		},
-		setGlyph: function (quadrant, facing = null) {
-			const prev = keys.indexOf(quadrant + cells.length);
-			if (facing == null) {
-				if (prev > -1) {
-					const base = keys.indexOf(quadrant);
-					if (base > -1 && values[base].fillStyle == "white") {
-						keys.splice(prev, 1);
-						values.splice(prev, 1);
-					}
-				}
-				return;
-			}
-			const next = polygonS2("glyph", "black", quadrant, facing);
-			if (prev > -1) {
-				values[prev] = next;
-			} else {
-				keys.push(quadrant + cells.length);
-				values.push(next);
-			}
-		}
-	};
-	tile.setParent(region);
-	return region;
-}
-
-/**
- * 
- * @param {string} name 
- * @param {string | CanvasGradient | CanvasPattern} fillStyle 
- * @param {Crumb} quadrant 
- * @param {Crumb} [facing] 
- * @returns {VertexArrayPolygon}
- */
-function polygonS2(name, fillStyle, quadrant, facing = 0) {
-	const verts = [...vertexArrays.S2[name]];
-	for (let i = 0; i < verts.length; i += 2) {
-		const swap = facing & 1;
-		if (swap) {
-			const temp = verts[i];
-			verts[i] = verts[i + 1];
-			verts[i + 1] = temp;
-		}
-		if (facing > 1) {
-			const j = swap ? i : i + 1;
-			verts[j] = 0.52 - verts[j];
-		}
-		if (quadrant & 1) {
-			verts[i] += 0.48;
-		}
-		if (quadrant > 1) {
-			verts[i + 1] += 0.48;
-		}
-	}
-	return { fillStyle: fillStyle, verts: verts };
-}

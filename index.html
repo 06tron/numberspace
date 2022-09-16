@@ -9,7 +9,7 @@
 	<script src="vertex_arrays.js"></script>
 	<script>
 
-		function onLoad() {
+		function onLoad() { // TODO: move this to its own file
 
 			const canvas = document.getElementById("ns_canvas");
 			const context = canvas.getContext("2d");
@@ -24,41 +24,45 @@
 				mouse.y = event.clientY;
 			};
 
-			const b1 = regionS2([4, 0, 0, 0]);
-			const b2 = regionS2([0, 1, 0, 0]);
-			b1.linkTo(b2, 0, 2);
-			b1.linkTo(b2, 3, 0);
-			// const variants = symbolVariants(4, [0, 0, 1, 0, 1, 1, 0, 1, 0, 0], 20);
-			// console.log(variants);
-			// const test = createTile(variants.map(x => ({ fillStyle: "white", verts: x })));
-			// test.insertBase("red");
-			// b1.tile.linkTo(test, getOri(0), getDir(1));
-
 			const len = 200;
+			const size = 2;
+			const margin = 15;
+			const step = len / (size * margin + size + 1);
+			const symbols = symbolRotations(vertexArrays.glyph);
+			const game = sudokuGame(size, symbols, margin);
 			const sx = canvas.width / 2 - len;
 			const sy = canvas.height / 2 - len;
-			let cellX = 0;
-			let cellY = 0;
-			// const xLim = Math.ceil(sx / len);
-			// const yLim = Math.ceil(sy / len);
-			const walk = walkS2(b1, getOri(0));
-			let onTile = false;
+			const lx = Math.ceil(sx / len);
+			const ly = Math.ceil(sy / len);
 			const xAxis = { a: { x: 0, y: 0 }, b: { x: 1, y: 0 } };
 			const yAxis = { a: { x: 0, y: 0 }, b: { x: 0, y: 1 } };
+			let cx = 0;
+			let cy = 0;
+			let onTile = false;
+
+			function cellSteps(n) {
+				return step * (1 + Math.floor(n / size) + n * (margin + 1));
+			}
+
+			function fillCell(x, y, color) {
+				context.fillStyle = color;
+				const s = step * margin;
+				context.fillRect(sx + cellSteps(x), sy + cellSteps(y), s, s);
+			}
 
 			function drawScene() {
-				const dx = Math.floor(2 * (mouse.x - sx) / len) - cellX;
-				const dy = Math.floor(2 * (mouse.y - sy) / len) - cellY;
+				const dx = Math.floor(size * (mouse.x - sx) / len) - cx;
+				const dy = Math.floor(size * (mouse.y - sy) / len) - cy;
 				if (onTile) {
 					if (dx != 0) {
-						if (walk.attempt(dx > 0 ? 0 : 1)) {
-							cellX += Math.sign(dx);
+						if (game.attempt(dx > 0 ? 0 : 1)) {
+							cx += Math.sign(dx);
 						} else {
 							onTile = false;
 						}
 					} else if (dy != 0) {
-						if (walk.attempt(dy > 0 ? 2 : 3)) {
-							cellY += Math.sign(dy);
+						if (game.attempt(dy > 0 ? 2 : 3)) {
+							cy += Math.sign(dy);
 						} else {
 							onTile = false;
 						}
@@ -66,30 +70,35 @@
 				} else if (dx == 0 && dy == 0) {
 					onTile = true;
 				}
-				const pTL = { x: sx + Math.floor(cellX / 2) * len, y: sy + Math.floor(cellY / 2) * len };
-				const limits = [2, 2, 2, 2];
+				const pTL = {
+					x: sx + Math.floor(cx / size) * len,
+					y: sy + Math.floor(cy / size) * len
+				};
+				const limits = [lx + 1 - cx, lx + cx, ly + 1 - cy, ly + cy];
 				if (onTile) {
-					tileTree(walk.tileWalk(), pTL, mouse, len, limits, context);
+					tileTree(game.tileWalk(), pTL, mouse, len, limits, context);
 				} else {
 					const mid = { x: pTL.x + len / 2, y: pTL.y + len / 2 };
-					tileTree(walk.tileWalk(), pTL, mid, len, limits, context);
+					tileTree(game.tileWalk(), pTL, mid, len, limits, context);
+					fillCell(cx, cy, "rgba(255, 0, 0, 0.4)");
 				}
 			}
 
 			canvas.onclick = function (event) {
 				onTile = false;
-				cellX &= 1;
-				cellY &= 1;
+				cx = modulo(cx, size);
+				cy = modulo(cy, size);
 			};
 
 			window.addEventListener("keydown", function (event) {
 				switch (event.key) {
-					case 'd': debugMode = !debugMode; break;
-					case 'n': walk.clear(); break;
-					case 'm': walk.write(0); break;
-					case ',': walk.write(1); break;
-					case '.': walk.write(2); break;
-					case '/': walk.write(3);
+					case 'z': debugMode = !debugMode; break;
+					case "Backspace":
+					case "Delete": game.clear(); break;
+					case 'a': game.write(0); break;
+					case 's': game.write(1); break;
+					case 'd': game.write(2); break;
+					case 'f': game.write(3);
 				}
 			});
 
@@ -97,7 +106,7 @@
 			let fps;
 
 			function drawInfo() {
-				const str = "(" + cellX + ", " + cellY + ") fps: " + fps;
+				const str = "(" + cx + ", " + cy + ") fps: " + fps;
 				context.fillStyle = "white";
 				context.fillText(str, canvas.width - 100, 20);
 			}
