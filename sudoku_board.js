@@ -59,7 +59,7 @@ function sudokuGame(size, symbols, margin) {
 			},
 			select: function (cellIndex) {
 				features[0] = {
-					fillStyle: "#505050",
+					fillStyle: "#999999", // "#505050",
 					verts: selectVerts[cellIndex]
 				};
 			},

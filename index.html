@@ -78,7 +78,10 @@
 				if (onTile) {
 					tileTree(game.tileWalk(), pTL, mouse, len, limits, context);
 				} else {
-					const mid = { x: pTL.x + len / 2, y: pTL.y + len / 2 };
+					const mid = {
+						x: sx + cellSteps(cx) + step * margin / 2,
+						y: sy + cellSteps(cy) + step * margin / 2
+					};
 					tileTree(game.tileWalk(), pTL, mid, len, limits, context);
 					fillCell(cx, cy, "rgba(255, 0, 0, 0.4)");
 				}
