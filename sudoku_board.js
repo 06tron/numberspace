@@ -1,7 +1,52 @@
+/**
+ * @param {number} a 
+ * @param {number} b 
+ * @returns {number}
+ */
 function modulo(a, b) {
 	return ((a % b) + b) % b;
 }
 
+/**
+ * The verts array describes a symbol centered in the unit square.
+ * @param {number} size - A nonnegative integer.
+ * @param {VertexArray} verts 
+ * @param {number} margin 
+ * @returns {VertexArray[]}
+ */
+ function symbolVariants(size, verts, margin) {
+	const smallStep = 1 / (size * margin + size + 1);
+	verts = verts.map(v => smallStep * (v * margin + 1));
+	const largeStep = smallStep * (margin + 1);
+	const variants = [];
+	for (let r = 0; r < size; ++r) {
+		for (let c = 0; c < size; ++c) {
+			const copy = [];
+			for (let i = 0; i < verts.length; i += 2) {
+				copy.push(verts[i] + c * largeStep);
+				copy.push(verts[i + 1] + r * largeStep);
+			}
+			variants.push(copy);
+		}
+	}
+	return variants;
+}
+
+/**
+ * @param {number} margin 
+ * @returns {VertexArray}
+ */
+ function getSelection(margin) {
+	const step = 1 / margin;
+	return vertexArrays.square.map(v => v ? (1 + step) : -step);
+}
+
+/**
+ * @param {number} size 
+ * @param {number} screenIndex 
+ * @param {SquareSymmetry} ori 
+ * @returns {number}
+ */
 function regionIndex(size, screenIndex, ori) {
 	let row = Math.floor(screenIndex / size);
 	let col = screenIndex % size;
@@ -14,13 +59,18 @@ function regionIndex(size, screenIndex, ori) {
 	return ori.verticalX ? (row + col * size) : (row * size + col);
 }
 
-// sudoku region: keys [0, size-1] are cells, keys [size, 2*size-1] are glyphs, and key 2*size is selection.
-
 /**
- * @typedef SudokuRegion
- * @property {Tile} tile
+ * @typedef SudokuController
  */
 
+/**
+ * In the regions array, indices 1 to size are cells, size+1 to 2*size are
+ * glyphs, and 0 is a selection.
+ * @param {number} size 
+ * @param {VertexArray[]} symbols 
+ * @param {number} margin 
+ * @returns {SudokuController}
+ */
 function sudokuGame(size, symbols, margin) {
 	const area = size * size;
 	const cellVerts = symbolVariants(size, vertexArrays.square, margin);
@@ -36,7 +86,7 @@ function sudokuGame(size, symbols, margin) {
 	const idx = () => regionIndex(size, cell[0] + cell[1] * size, walk.currOri());
 	const reg = () => regions[walk.currTile().id];
 
-	function createRegion(cells, id) { // size 2 cells is array like: [4, 0, 1, 0]
+	function createRegion(cells, id) {
 		const features = new Array(1 + area * 2).fill(null);
 		for (let i = 0; i < area; ++i) {
 			features[1 + i] = {
@@ -59,7 +109,7 @@ function sudokuGame(size, symbols, margin) {
 			},
 			select: function (cellIndex) {
 				features[0] = {
-					fillStyle: "#999999", // "#505050",
+					fillStyle: "gray",
 					verts: selectVerts[cellIndex]
 				};
 			},
@@ -103,6 +153,10 @@ function sudokuGame(size, symbols, margin) {
 	};
 }
 
+/**
+ * @param {*} verts 
+ * @returns {VertexArray[]}
+ */
 function symbolRotations(verts) {
 	const rotations = [[], [], [], []];
 	for (let i = 0; i < verts.length; i += 2) {
@@ -120,37 +174,3 @@ function symbolRotations(verts) {
 	}
 	return rotations;
 }
-
-function getSelection(margin) {
-	const step = 1 / margin;
-	return vertexArrays.square.map(v => v ? (1 + step) : -step);
-}
-
-// verts describes the symbol centered in the unit square
-function symbolVariants(size, verts, margin) {
-	const smallStep = 1 / (size * margin + size + 1);
-	verts = verts.map(v => smallStep * (v * margin + 1));
-	const largeStep = smallStep * (margin + 1);
-	const variants = [];
-	for (let r = 0; r < size; ++r) {
-		for (let c = 0; c < size; ++c) {
-			const copy = [];
-			for (let i = 0; i < verts.length; i += 2) {
-				copy.push(verts[i] + c * largeStep);
-				copy.push(verts[i + 1] + r * largeStep);
-			}
-			variants.push(copy);
-		}
-	}
-	return variants;
-}
-
-/**
- * @typedef SudokuWalk
- * @property {() => Walk} tileWalk
- */
-
-/**
- * 2 bits of information. In this case, used for..
- * @typedef {number} Crumb
- */

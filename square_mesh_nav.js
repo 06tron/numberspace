@@ -187,13 +187,18 @@ function getUpdater(tlx, tly, sideLength, orient) {
 }
 
 /**
- * Represents a polygon as an ordered list of its vertex coordinates.
+ * An array with an even number of elements (at least four) which represent 2D
+ * point coordinates. e.g. [x0, y0, x1, y1, x2, y2...]
+ * @typedef {number[]} VertexArray
+ */
+
+/**
+ * Defines a polygon by its appearance and an ordered list of its vertices.
  * @typedef VertexArrayPolygon
  * @property {string | CanvasGradient | CanvasPattern} fillStyle - A property of
  * the Canvas 2D API which specifies the color, gradient, or pattern to use when
  * drawing this polygon.
- * @property {number[]} verts - Array with an even number of elements (at least
- * four) which represent 2D point coordinates. e.g. [x0, y0, x1, y1, x2, y2...]
+ * @property {VertexArray} verts - The vertices that make up this polygon.
  */
 
 /**
@@ -312,6 +317,7 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * then returns this tile. The link can be directed or undirected.
  * @property {TileDrawer} draw - Draws this tile, making use of edges which
  * control how much of the tile is drawn.
+ * @property {function} insertBase - Described within the createTile function.
  * @property {Tile[]} nei - The four tiles adjacent to this one.
  * @property {SquareSymmetry[]} rel - The orientations of the neighbor tiles
  * relative to this tile in its default orientation.
@@ -481,9 +487,11 @@ function compareSlope({ a, b }, { a: c, b: d }) {
  * @param {Point} origin - The screen coordinates of the viewer's location,
  * where their eyesight originates from.
  * @param {number} len - The side length of a tile.
- * @param {number[]} limits - Two values that limit the viewable area to a
- * rectangle centered on the start tile. The rectangle has a height of
- * (2 * limits.y + 1) tiles and a width of (2 * limits.x + 1) tiles. TODO: update this
+ * @param {number[]} limits - An array of four numbers, limiting the size of the
+ * tile tree. The numbers determine the maximum number of steps that can be
+ * taken in a single cardinal direction, and are ordered east, west, south,
+ * north. The largest viewable area is a rectangle has a height of (limits[2] +
+ * limits[3] + 1) tiles and a width of (limits[0] + limit[1] + 1) tiles. 
  * @param {CanvasRenderingContext2D} context - Part of the Canvas API, provides
  * the 2D rendering context for the drawing surface of a canvas element.
  */
