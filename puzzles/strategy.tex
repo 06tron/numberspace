@@ -1,0 +1,32 @@
+\documentclass[12pt]{article}         
+\usepackage{fullpage}
+\usepackage[shortlabels]{enumitem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Graph Navigation}
+\author{Matthew Richardson}
+\date{October 2022}
+
+\begin{document}
+
+\subsection*{Dihedral Group of Order 8}
+Represent two elements of $D_4$ as matrices, and use them to define the 8-tuple $d$:
+\begin{center}
+    $r=\begin{pmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 1 \end{pmatrix}$
+    \quad
+    $s=\begin{pmatrix} -1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{pmatrix}$
+    \quad\quad
+    $d=(I_3,s,sr^2,r^2,sr,r,r^3,sr^3)$
+\end{center}
+The group $D_4$ is formed by the elements of $d$ under the operation of conventional matrix multiplication. Represented this way, $D_4$ is a subgroup of $GL(3,\mathbb{Z})$.
+\subsection*{Oriented Coordinate Matrix}
+\begin{center}
+    $P=\left\{\begin{pmatrix}
+        1 & 0 & x \\
+        0 & 1 & y \\
+        0 & 0 & 1 \end{pmatrix}\cdot m\mathrel{\bigg|} x,y\in\mathbb{Z}\text{ and }m\in D_4\right\}$
+\end{center}
+$P$ is a subgroup of the Euclidean group in 2 dimensions.
+
+\end{document}

@@ -1,5 +1,3 @@
-let debugMode = false; // edited in index.html (used in drawPolygon)
-
 /**
  * A point on the xy-plane. Defined like: "const p = { x: 24, y: 25 };". The
  * optional outL and outR properties are flags used in the drawPolygon function.
@@ -187,6 +185,12 @@ function getUpdater(tlx, tly, sideLength, orient) {
 }
 
 /**
+ * A property of the Canvas 2D API which specifies the color, gradient, or
+ * pattern to use when drawing.
+ * @typedef {string | CanvasGradient | CanvasPattern} FillStyle
+ */
+
+/**
  * An array with an even number of elements (at least four) which represent 2D
  * point coordinates. e.g. [x0, y0, x1, y1, x2, y2...]
  * @typedef {number[]} VertexArray
@@ -195,9 +199,7 @@ function getUpdater(tlx, tly, sideLength, orient) {
 /**
  * Defines a polygon by its appearance and an ordered list of its vertices.
  * @typedef VertexArrayPolygon
- * @property {string | CanvasGradient | CanvasPattern} fillStyle - A property of
- * the Canvas 2D API which specifies the color, gradient, or pattern to use when
- * drawing this polygon.
+ * @property {FillStyle} fillStyle - The fill style of this polygon.
  * @property {VertexArray} verts - The vertices that make up this polygon.
  */
 
@@ -285,11 +287,11 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
 /**
  * @callback TileLinker
  * @param {Tile} target - The tile that this tile should be linked to.
+ * @param {Cardinal} dir - If this tile is in default orientation, then this
+ * cardinal is the direction to walk in to get to the target tile.
  * @param {SquareSymmetry} ori - If this tile is in default orientation, then
  * this parameter is the SquareSymmetry object representing how the target tile
  * should be oriented in relation to this tile.
- * @param {Cardinal} dir - If this tile is in default orientation, then this
- * cardinal is the direction to walk in to get to the target tile.
  * @param {boolean} [andBack] - Defaults to true, and determines whether or not
  * to link the target back to this tile. If true, another TileLinker will be
  * called to make the link go both ways. The andBack value of the second
@@ -317,7 +319,9 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
  * then returns this tile. The link can be directed or undirected.
  * @property {TileDrawer} draw - Draws this tile, making use of edges which
  * control how much of the tile is drawn.
- * @property {function} insertBase - Described within the createTile function.
+ * @property {(fs: FillStyle) => Tile} insertBase - Inserts a background
+ * polygon, which is simply a square the size of the tile, to the front of the
+ * polygons array. Returns this tile.
  * @property {Tile[]} nei - The four tiles adjacent to this one.
  * @property {SquareSymmetry[]} rel - The orientations of the neighbor tiles
  * relative to this tile in its default orientation.
@@ -338,10 +342,9 @@ function drawPolygon(plg, edgeL, edgeR, updater, context) {
 function createTile(polygons, name = "tile_string", id = -1) {
 	const neighbors = new Array(4).fill({ isEmpty: () => true });
 	const relations = new Array(4).fill(null);
-	let parent = null;
 	return {
 		isEmpty: () => false,
-		linkTo: function (target, ori, dir, andBack = true) {
+		linkTo: function (target, dir, ori, andBack = true) {
 			const i = dir.index();
 			neighbors[i] = target;
 			relations[i] = ori;
@@ -350,7 +353,7 @@ function createTile(polygons, name = "tile_string", id = -1) {
 				if (ori.verticalX && ori.negativeH != ori.negativeV) {
 					ori = square(ori.negativeV, ori.negativeH, ori.verticalX);
 				}
-				target.linkTo(this, ori, back, false);
+				target.linkTo(this, back, ori, false);
 			}
 			return this;
 		},
@@ -361,18 +364,9 @@ function createTile(polygons, name = "tile_string", id = -1) {
 				}
 			});
 		},
-		/**
-		 * Inserts a background polygon, which is simply a square the size of
-		 * the tile, to the front of the polygons array.
-		 * @param {string | CanvasGradient | CanvasPattern } baseFillStyle - A
-		 * property of the Canvas 2D API which specifies the color, gradient, or
-		 * pattern to use when drawing the created tile's background.
-		 */
-		insertBase: function (baseFillStyle) {
-			polygons.unshift({
-				fillStyle: baseFillStyle,
-				verts: [0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
-			});
+		insertBase: function (fs) {
+			polygons.unshift({ fillStyle: fs, verts: vertexArrays.square });
+			return this;
 		},
 		nei: neighbors,
 		rel: relations,
@@ -596,13 +590,13 @@ function test_transferTo() {
 }
 
 function test_linkTo(abc) {
-	abc[0].linkTo(abc[1], getOri(0), getDir(0), true);
-	abc[0].linkTo(abc[1], getOri(6), getDir(2), true);
-	abc[2].linkTo(abc[0], getOri(2), getDir(3), true);
-	abc[1].linkTo(abc[2], getOri(0), getDir(3), true);
-	abc[2].linkTo(abc[0], getOri(0), getDir(0), true);
-	abc[1].linkTo(abc[1], getOri(2), getDir(2), false);
-	abc[2].linkTo(abc[0], getOri(1), getDir(1), false);
+	abc[0].linkTo(abc[1], getDir(0), getOri(0), true);
+	abc[0].linkTo(abc[1], getDir(2), getOri(6), true);
+	abc[2].linkTo(abc[0], getDir(3), getOri(2), true);
+	abc[1].linkTo(abc[2], getDir(3), getOri(0), true);
+	abc[2].linkTo(abc[0], getDir(0), getOri(0), true);
+	abc[1].linkTo(abc[1], getDir(2), getOri(2), false);
+	abc[2].linkTo(abc[0], getDir(1), getOri(1), false);
 	console.assert(abc[1].rel[1].toString() == "0",
 		"B's \"<-\" relation should be ori[0]");
 	console.assert(abc[1].rel[0].toString() == "5",

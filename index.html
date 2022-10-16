@@ -4,137 +4,27 @@
 
 <head>
 	<title>Number Space</title>
+	<link rel="icon" type="image/png" href="ns_heart.png">
 	<script src="square_mesh_nav.js"></script>
-	<script src="sudoku_board.js"></script>
 	<script src="vertex_arrays.js"></script>
+	<script src="puzzle_meshes.js"></script>
+	<script src="sudoku_game.js"></script>
 	<script>
 
-		function onLoad() { // TODO: move this to its own file
+		let debugMode = false;
 
-			const canvas = document.getElementById("ns_canvas");
-			const context = canvas.getContext("2d");
+		function onLoad() {
 
-			canvas.width = innerWidth;
-			canvas.height = innerHeight;
+			// const canvas = document.getElementById("ns_canvas");
 
-			const mouse = { x: 0, y: 0 };
-
-			canvas.onmousemove = function (event) {
-				mouse.x = event.clientX;
-				mouse.y = event.clientY;
-			};
-
-			const len = 200;
-			const size = 2;
-			const margin = 15;
-			const step = len / (size * margin + size + 1);
-			const symbols = symbolRotations(vertexArrays.glyph);
-			const game = sudokuGame(size, symbols, margin);
-			const sx = canvas.width / 2 - len;
-			const sy = canvas.height / 2 - len;
-			const lx = Math.ceil(sx / len);
-			const ly = Math.ceil(sy / len);
-			const xAxis = { a: { x: 0, y: 0 }, b: { x: 1, y: 0 } };
-			const yAxis = { a: { x: 0, y: 0 }, b: { x: 0, y: 1 } };
-			let cx = 0;
-			let cy = 0;
-			let onTile = false;
-
-			function cellSteps(n) {
-				return step * (1 + Math.floor(n / size) + n * (margin + 1));
-			}
-
-			function fillCell(x, y, color) {
-				context.fillStyle = color;
-				const s = step * margin;
-				context.fillRect(sx + cellSteps(x), sy + cellSteps(y), s, s);
-			}
-
-			function drawScene() {
-				const dx = Math.floor(size * (mouse.x - sx) / len) - cx;
-				const dy = Math.floor(size * (mouse.y - sy) / len) - cy;
-				if (onTile) {
-					if (dx != 0) {
-						if (game.attempt(dx > 0 ? 0 : 1)) {
-							cx += Math.sign(dx);
-						} else {
-							onTile = false;
-						}
-					} else if (dy != 0) {
-						if (game.attempt(dy > 0 ? 2 : 3)) {
-							cy += Math.sign(dy);
-						} else {
-							onTile = false;
-						}
-					}
-				} else if (dx == 0 && dy == 0) {
-					onTile = true;
-				}
-				const pTL = {
-					x: sx + Math.floor(cx / size) * len,
-					y: sy + Math.floor(cy / size) * len
-				};
-				const limits = [lx + 1 - cx, lx + cx, ly + 1 - cy, ly + cy];
-				if (onTile) {
-					tileTree(game.tileWalk(), pTL, mouse, len, limits, context);
-				} else {
-					const mid = {
-						x: sx + cellSteps(cx) + step * margin / 2,
-						y: sy + cellSteps(cy) + step * margin / 2
-					};
-					tileTree(game.tileWalk(), pTL, mid, len, limits, context);
-					fillCell(cx, cy, "rgba(255, 0, 0, 0.4)");
-				}
-			}
-
-			canvas.onclick = function (event) {
-				onTile = false;
-				cx = modulo(cx, size);
-				cy = modulo(cy, size);
-			};
-
-			window.addEventListener("keydown", function (event) {
-				switch (event.key) {
-					case 'z': debugMode = !debugMode; break;
-					case "Backspace":
-					case "Delete": game.clear(); break;
-					case 'a': game.write(0); break;
-					case 's': game.write(1); break;
-					case 'd': game.write(2); break;
-					case 'f': game.write(3);
-				}
-			});
-
-			const times = [];
-			let fps;
-
-			function drawInfo() {
-				const str = "(" + cx + ", " + cy + ") fps: " + fps;
-				context.fillStyle = "white";
-				context.fillText(str, canvas.width - 100, 20);
-			}
-
-			(function animate() {
-				context.clearRect(0, 0, canvas.width, canvas.height);
-				drawScene();
-				if (debugMode) {
-					const now = performance.now();
-					while (times.length > 0 && times[0] <= now - 1000) {
-						times.shift();
-					}
-					times.push(now);
-					fps = times.length;
-					drawInfo();
-				}
-				requestAnimationFrame(animate);
-			})();
+			// canvas.onmousemove = updateMouse;
 
 		}
 
 	</script>
 </head>
 
-<body onload="onLoad()">
+<body onload="controller()">
 	<canvas id="ns_canvas"></canvas>
 	<style>
 		* {
