@@ -86,7 +86,7 @@ function sudokuGame(size, symbols, margin, puzzle) {
 			if (cells[i] > 0) {
 				features[1 + i].fillStyle = "lightsteelblue";
 				features[1 + area + i] = {
-					fillStyle: "lightcoral",
+					fillStyle: "black",
 					verts: symbolVerts[cells[i] - 1][i]
 				};
 			}
@@ -182,10 +182,10 @@ function controller() {
 	canvas.onmousemove = updateMouse;
 
 	const len = 200;
-	const size = 3;
+	const size = 2;
 	const margin = 15;
 	const step = len / (size * margin + size + 1);
-	const symbols = symbolRotations(vertexArrays.arrow);
+	const symbols = symbolRotations(vertexArrays.quantico[9]);
 	let game = sudokuGame(size, symbols, margin, puzzleMeshes.two);
 	const sx = canvas.width / 2 - len;
 	const sy = canvas.height / 2 - len;
