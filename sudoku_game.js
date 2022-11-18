@@ -28,7 +28,7 @@
  * @returns {VertexArray}
  */
  function getSelection(margin) {
-	const step = 1 / margin;
+	const step = 1.1 / margin;
 	return vertexArrays.square.map(v => v ? (1 + step) : -step);
 }
 
@@ -87,7 +87,7 @@ function sudokuGame(size, symbols, margin, puzzle) {
 				features[1 + i].fillStyle = "lightsteelblue";
 				features[1 + area + i] = {
 					fillStyle: "black",
-					verts: symbolVerts[cells[i] - 1][i]
+					verts: symbolVerts[cells[i]][i]
 				};
 			}
 		}
@@ -99,7 +99,7 @@ function sudokuGame(size, symbols, margin, puzzle) {
 			},
 			select: function (cellIndex) {
 				features[0] = {
-					fillStyle: "darkgray",
+					fillStyle: "darkgrey",
 					verts: selectVerts[cellIndex]
 				};
 			},
@@ -144,6 +144,7 @@ function sudokuGame(size, symbols, margin, puzzle) {
 }
 
 /**
+ * generalize for different symmetries
  * @param {*} verts 
  * @returns {VertexArray[]}
  */
@@ -165,28 +166,30 @@ function symbolRotations(verts) {
 	return rotations;
 }
 
-function controller() {
-	const canvas = document.getElementById("ns_canvas");
+function interactiveGame(board, canvas) {
 	const context = canvas.getContext("2d");
-
-	canvas.width = innerWidth;
-	canvas.height = innerHeight;
-
 	const mouse = { x: 0, y: 0 };
 
-	function updateMouse(event) {
-		mouse.x = event.clientX;
-		mouse.y = event.clientY;
+	return {
+		mouseUpdate: function (event) {
+			mouse.x = event.clientX;
+			mouse.y = event.clientY;
+		},
+		keyUpdate: e => 0,
+		// canvasUpdate?
+		drawScene: () => 0,
+		drawInfo: fps => 0
 	}
+}
 
-	canvas.onmousemove = updateMouse;
+function controller() {
 
-	const len = 200;
-	const size = 2;
-	const margin = 15;
+	const len = 200; // canvas and board
+	const size = 3; // board
+	const margin = 15; // board
 	const step = len / (size * margin + size + 1);
-	const symbols = symbolRotations(vertexArrays.quantico[9]);
-	let game = sudokuGame(size, symbols, margin, puzzleMeshes.two);
+	const symbols = vertexArrays.quantico; // board
+	let game = sudokuGame(size, symbols, margin, puzzleMeshes.S3[0]);
 	const sx = canvas.width / 2 - len;
 	const sy = canvas.height / 2 - len;
 	const lx = Math.ceil(sx / len);
@@ -260,30 +263,6 @@ function controller() {
 				game = sudokuGame(size, symbols, margin, puzzleMeshes.one);
 				cx = 0;
 				cy = 0; // reset function?
-				onTile = false;
-				break;
-			case '2':
-				game = sudokuGame(size, symbols, margin, puzzleMeshes.two);
-				cx = 0;
-				cy = 0;
-				onTile = false;
-				break;
-			case '3':
-				game = sudokuGame(size, symbols, margin, puzzleMeshes.three);
-				cx = 0;
-				cy = 0;
-				onTile = false;
-				break;
-			case '4':
-				game = sudokuGame(size, symbols, margin, puzzleMeshes.four);
-				cx = 0;
-				cy = 0;
-				onTile = false;
-				break;
-			case '5':
-				game = sudokuGame(size, symbols, margin, puzzleMeshes.test);
-				cx = 0;
-				cy = 0;
 				onTile = false;
 				break;
 		}

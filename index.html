@@ -7,25 +7,51 @@
 	<link rel="icon" type="image/png" href="ns_heart.png">
 	<script src="graphics/vertex_arrays.js"></script>
 	<script src="square_mesh_nav.js"></script>
-	<script src="puzzles/meshes.js"></script>
+	<script src="puzzle/boards.js"></script>
 	<script src="sudoku_game.js"></script>
 	<script>
 
-		let debugMode = false;
+		let debugMode = 0;
 
-		function onLoad() {
+		window.onload = function () {
 
-			// const canvas = document.getElementById("ns_canvas");
+			const canvas = document.getElementById("canvas");
 
-			// canvas.onmousemove = updateMouse;
+			let game = interactiveGame(puzzleBoards.S3.courtyard, canvas);
+
+			canvas.onmousemove = event => game.mouseUpdate(event);
+
+			canvas.width = innerWidth;
+			canvas.height = innerHeight;
+			// resized window?
+
+			window.addEventListener("keydown", function (event) {
+				debugMode ^= event.key == "F3";
+				game.keyUpdate(event);
+			});
+
+			const times = [];
+
+			(function animate() {
+				game.drawScene();
+				if (debugMode) {
+					const now = performance.now();
+					while (times.length > 0 && times[0] <= now - 1000) {
+						times.shift();
+					}
+					times.push(now);
+					game.drawInfo(times.length);
+				}
+				requestAnimationFrame(animate);
+			})();
 
 		}
 
 	</script>
 </head>
 
-<body onload="controller()">
-	<canvas id="ns_canvas"></canvas>
+<body>
+	<canvas id="canvas"></canvas>
 	<style>
 		* {
 			margin: 0;
