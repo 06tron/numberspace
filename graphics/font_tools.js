@@ -1,3 +1,9 @@
+/**
+ * Copy the raw coordinate values from this site:
+ * https://opentype.js.org/glyph-inspector.html
+ * @param {*} raw An array of numbers, the first two are xMin and xMax.
+ * @returns {string} An array of 2D coordinates in string form.
+ */
 function processArray(raw) {
 	const resize = raw.map(x => (x / 1400));
 	const offset = (1 - resize[1] - resize[0]) / 2;
@@ -24,4 +30,8 @@ const digits = [
 	[90, 545, 445, 85, 445, 615, 190, 615, 190, 380, 445, 380, 445, 331, 374, 290, 206, 290, 90, 357, 90, 638, 206, 705, 429, 705, 545, 638, 545, 62, 429, -5, 206, -5, 90, 62, 90, 175, 190, 175, 190, 85]
 ];
 
-console.log(digits.map(processArray).join(",\n"));
+const letters = [
+	[90, 499, 190, 315, 190, 0, 90, 0, 90, 700, 499, 700, 499, 610, 190, 610, 190, 405, 439, 405, 439, 315]
+]
+
+console.log(letters.map(processArray).join(",\n"));

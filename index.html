@@ -1,64 +1,26 @@
 <!DOCTYPE html>
-<!-- Author: Matthew Richardson -->
-<html>
+<html lang="en">
 
 <head>
 	<title>Number Space</title>
-	<link rel="icon" type="image/png" href="ns_heart.png">
+	<link rel="icon" type="image/png" href="graphics/ns_heart.png">
+	<link href="style.css" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<script src="graphics/vertex_arrays.js"></script>
 	<script src="square_mesh_nav.js"></script>
 	<script src="puzzle/boards.js"></script>
-	<script src="sudoku_game.js"></script>
-	<script>
-
-		let debugMode = 0;
-
-		window.onload = function () {
-
-			const canvas = document.getElementById("canvas");
-
-			let game = interactiveGame(puzzleBoards.S3.courtyard, canvas);
-
-			canvas.onmousemove = event => game.mouseUpdate(event);
-
-			canvas.width = innerWidth;
-			canvas.height = innerHeight;
-			// resized window?
-
-			window.addEventListener("keydown", function (event) {
-				debugMode ^= event.key == "F3";
-				game.keyUpdate(event);
-			});
-
-			const times = [];
-
-			(function animate() {
-				game.drawScene();
-				if (debugMode) {
-					const now = performance.now();
-					while (times.length > 0 && times[0] <= now - 1000) {
-						times.shift();
-					}
-					times.push(now);
-					game.drawInfo(times.length);
-				}
-				requestAnimationFrame(animate);
-			})();
-
-		}
-
-	</script>
+	<script src="draw_game.js"></script>
 </head>
 
 <body>
-	<canvas id="canvas"></canvas>
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			background-color: #1E1E1E;
-		}
-	</style>
+	<div class="container">
+		<div class="menu">
+			<h1>Number Space</h1>
+		</div>
+		<div class="game">
+			<canvas id="canvas"></canvas>
+		</div>
+	</div>
 </body>
 
 </html>

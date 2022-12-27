@@ -1,3 +1,42 @@
+let debugMode = 0;
+
+window.onload = function () {
+
+	const canvas = document.getElementById("canvas");
+	
+	const mouse = { x: 0, y: 0 };
+
+	canvas.onmousemove = function (event) {
+		mouse.x = event.clientX;
+		mouse.y = event.clientY;
+	}
+
+	canvas.width = innerWidth;
+	canvas.height = innerHeight;
+	// resized window?
+
+	window.addEventListener("keydown", function (event) {
+		debugMode ^= event.key == "F3";
+		game.keyUpdate(event);
+	});
+
+	const fpsTimes = [];
+
+	(function animate() {
+		game.drawScene();
+		if (debugMode) {
+			const now = performance.now();
+			while (fpsTimes.length > 0 && fpsTimes[0] <= now - 1000) {
+				fpsTimes.shift();
+			}
+			fpsTimes.push(now);
+			game.drawInfo(fpsTimes.length);
+		}
+		requestAnimationFrame(animate);
+	})();
+
+}
+
 /**
  * The verts array describes a symbol centered in the unit square.
  * @param {number} size - A nonnegative integer.
@@ -23,14 +62,7 @@
 	return variants;
 }
 
-/**
- * @param {number} margin 
- * @returns {VertexArray}
- */
- function getSelection(margin) {
-	const step = 1.1 / margin;
-	return vertexArrays.square.map(v => v ? (1 + step) : -step);
-}
+
 
 /**
  * @param {number} size 
@@ -167,8 +199,7 @@ function symbolRotations(verts) {
 }
 
 function interactiveGame(board, canvas) {
-	const context = canvas.getContext("2d");
-	const mouse = { x: 0, y: 0 };
+	
 
 	return {
 		mouseUpdate: function (event) {

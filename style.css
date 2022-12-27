@@ -1,0 +1,29 @@
+@font-face {
+	font-family: "Quantico";
+	src: url("fonts/quantico-v15-latin-regular.woff2") format("woff2"),
+		url("fonts/quantico-v15-latin-regular.woff") format("woff");
+}
+
+* {
+	margin: 0;
+	overflow: hidden;
+	
+}
+
+.container {
+	display: flex;
+	
+}
+
+.menu {
+	font-weight: normal;
+	font-family: "Quantico", sans-serif;
+	text-align: center;
+	padding-top: 10px;
+	flex: 0 0 300px;
+}
+
+.game {
+	flex: 1;
+	background-color: #1E1E1E;
+}
