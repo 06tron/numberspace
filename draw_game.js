@@ -1,9 +1,9 @@
-const tableMargin = 100;
-let debugMode = 0;
+const tableMargin = 80;
 
 // returns sudoku game
 function startGame({
 	cellNumber,
+	puzzleName,
 	tableWidth,
 	tableHeight,
 	symbolSet,
@@ -12,6 +12,8 @@ function startGame({
 }) {
 
 	const regionArea = cellNumber * cellNumber;
+	const mouseRaw = { x: 0, y: 0 };
+	const mouseBox = { x: 0, y: 0 };
 
 	function createRegion(cells, regionId) {
 		const polygons = new Array(1 + regionArea * 2).fill(null);
@@ -31,76 +33,76 @@ function startGame({
 		const tile = createTile(polygons, cells.join(), regionId);
 		return {
 			tile: tile,
-			select: function (cellIndex) {
-				polygons[0] = {
+			reselect: function (cellIndex = -1) {
+				polygons[0] = cellIndex < 0 ? null : {
 					fillStyle: "darkgrey",
 					verts: symbolSet.selection[cellIndex]
 				};
 			},
-			deselect: function () {
-				polygons[0] = null;
-			},
-			setSymbol: function (cellIndex, symbolIndex = -1) {
+			overwrite: function (cellIndex, glyphIndex = -1) {
 				if (cells[cellIndex] != 0) {
 					return;
 				}
-				if (symbolIndex == -1) {
-					polygons[cellIndex + 1 + regionArea] = null;
-				} else {
-					polygons[cellIndex + 1 + regionArea] = {
-						fillStyle: "black",
-						verts: symbolSet.glyph[symbolIndex][cellIndex]
-					};
+				polygons[cellIndex + 1 + regionArea] = glyphIndex < 0 ? null : {
+					fillStyle: "black",
+					verts: symbolSet.glyph[glyphIndex][cellIndex]
 				}
 			}
 		};
 	}
 
-	let regionLength;
 	const regions = sudokuCells.map(createRegion);
 	halfEdges.forEach(function ([startId, targetId, dirIndex, oriIndex]) {
 		const start = regions[startId].tile;
 		const target = regions[targetId].tile;
 		start.linkTo(target, getDir(dirIndex), getOri(oriIndex));
 	});
-	regions[0].select(0, getOri(0));
+	regions[0].reselect(0);
 	const walk = startWalk(regions[0].tile, getOri(0));
-	return {
-		resize: function (canvas) {
+	return [puzzleName, {
+		draw: function (canvas) {
 			const horizontalFit = (canvas.width - tableMargin * 2) / tableWidth;
 			const verticalFit = (canvas.height - tableMargin * 2) / tableHeight;
 			regionLength = Math.min(horizontalFit, verticalFit);
-		},
-		draw: function (canvas) {
 			const pTL = {
-				x: (canvas.width - regionLength * tableWidth) / 2,
-				y: (canvas.height - regionLength * tableHeight) / 2
+				x: (canvas.width + regionLength * (2 * mouseBox.x - tableWidth)) / 2,
+				y: (canvas.height + regionLength * (2 * mouseBox.y - tableHeight)) / 2,
 			};
-			tileTree(walk, pTL, pTL, regionLength, [5,5,5,5], canvas.getContext("2d"));
+			tileTree(walk, pTL, mouseRaw, regionLength, [5,5,5,5], canvas.getContext("2d"));
 		}
-	}
+	}];
+}
+
+function insertThumb({ puzzleName }) {
+	const img = document.createElement("img");
+	img.className = "thumb";
+	img.src = "graphics/" + puzzleName + ".png";
+	img.alt = puzzleName;
+	document.getElementById("puzzles").appendChild(img);
 }
 
 window.onload = function () {
+	puzzleBoards.forEach(insertThumb);
+	const sudokuGames = Object.fromEntries(puzzleBoards.map(startGame));
+	let currentGame = puzzleBoards[0].puzzleName;
+
 	const canvas = document.getElementById("canvas");
 	const ctx = canvas.getContext("2d");
-
-	let menuWidth = 300;
-	const sudokuGames = puzzleBoards.map(startGame);
-	let gameIndex = 0;
-
-	canvas.onclick = function (event) {
-		ctx.beginPath();
-		ctx.arc(event.clientX - menuWidth, event.clientY, 10, 0, 2 * Math.PI);
-		ctx.stroke();
-	}
+	const openMenuWidth = 300;
+	let menuWidth = openMenuWidth;
 
 	function redrawCanvas() {
-		ctx.strokeStyle = "red";
-		ctx.lineWidth = 10;
-		ctx.strokeRect(0, 0, canvas.width, canvas.height);
-		sudokuGames[gameIndex].draw(canvas);
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		sudokuGames[currentGame].draw(canvas);
 	}
+
+	window.addEventListener("click", function (event) {
+		if (event.target.className != "thumb") {
+			return;
+		}
+		currentGame = event.target.alt;
+		redrawCanvas();
+	});
 
 	// canvas.onmousemove = function (event) {
 	// 	sudokuGames[gameIndex].moveTo(event.clientX - menuWidth, event.clientY);
@@ -110,7 +112,6 @@ window.onload = function () {
 	function resizeCanvas() {
 		canvas.width = window.innerWidth - menuWidth;
 		canvas.height = window.innerHeight;
-		sudokuGames[gameIndex].resize(canvas);
 		redrawCanvas();
 	}
 

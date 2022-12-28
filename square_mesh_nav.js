@@ -1,3 +1,5 @@
+let debugMode = 0;
+
 /**
  * A point on the xy-plane. Defined like: "const p = { x: 24, y: 25 };". The
  * optional outL and outR properties are flags used in the drawPolygon function.

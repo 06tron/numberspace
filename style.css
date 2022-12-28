@@ -7,23 +7,29 @@
 * {
 	margin: 0;
 	overflow: hidden;
-	
-}
-
-.container {
-	display: flex;
-	
-}
-
-.menu {
-	font-weight: normal;
-	font-family: "Quantico", sans-serif;
-	text-align: center;
-	padding-top: 10px;
-	flex: 0 0 300px;
 }
 
 .game {
-	flex: 1;
+	float: right;
 	background-color: #1E1E1E;
+}
+
+/* Styles the menu content which fits into the space left of the game board.
+Possibly add "position: absolute; width: 300px;" to allow the column position to
+be edited in JavaScript. Then access this defined width like so:
+function getMenuWidth() {
+	return parseInt(getComputedStyle(document.querySelector(".menu")).width);
+} */
+.menu {
+	font-family: "Quantico", sans-serif;
+	font-weight: normal;
+	text-align: center;
+	padding-top: 10px;
+}
+
+.thumb {
+	width: 35%;
+	margin: 5%;
+	border-radius: 20%;
+	background-color: blue;
 }
