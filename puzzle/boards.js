@@ -2,17 +2,17 @@ const cellMargin = 15;
 
 /**
  * The verts array describes a symbol centered in the unit square.
- * @param {number} cellNumber - A nonnegative integer.
+ * @param {number} order - A nonnegative integer.
  * @param {VertexArray} verts 
  * @returns {VertexArray[]}
  */
-function symbolVariants(cellNumber, verts) {
-	const smallStep = 1 / (cellNumber * cellMargin + cellNumber + 1);
+function symbolVariants(order, verts) {
+	const smallStep = 1 / (order * cellMargin + order + 1);
 	verts = verts.map(v => smallStep * (v * cellMargin + 1));
 	const largeStep = smallStep * (cellMargin + 1);
 	const variants = [];
-	for (let r = 0; r < cellNumber; ++r) {
-		for (let c = 0; c < cellNumber; ++c) {
+	for (let r = 0; r < order; ++r) {
+		for (let c = 0; c < order; ++c) {
 			const copy = [];
 			for (let i = 0; i < verts.length; i += 2) {
 				copy.push(verts[i] + c * largeStep);
@@ -25,15 +25,15 @@ function symbolVariants(cellNumber, verts) {
 }
 
 const selectionVerts = (function () {
-	const step = 1.1 / cellMargin;
+	const step = 1.03 / cellMargin;
 	return vertexArrays.square.map(v => v ? (1 + step) : -step);
 })();
 
-function getSymbolSet(cellNumber, glyphSet) {
+function getSymbolSet(order, glyphSet) {
 	return {
-		cell: symbolVariants(cellNumber, vertexArrays.square),
-		selection: symbolVariants(cellNumber, selectionVerts),
-		glyph: glyphSet.map(x => symbolVariants(cellNumber, x))
+		cell: symbolVariants(order, vertexArrays.square),
+		selection: symbolVariants(order, selectionVerts),
+		glyph: glyphSet.map(x => symbolVariants(order, x))
 	}
 }
 
@@ -41,12 +41,12 @@ const nineDigits = getSymbolSet(3, vertexArrays.quantico.slice(1));
 
 const puzzleBoards = [
 	{
-		"cellNumber": 3,
-		"puzzleName": "ns_name",
+		"order": 3,
+		"puzzleKey": "ns_name",
 		"tableWidth": 3,
 		"tableHeight": 3,
 		"symbolSet": nineDigits,
-		"sudokuCells": [
+		"puzzleCells": [
 			[5, 2, 1, 0, 7, 4, 6, 3, 8],
 			[7, 4, 3, 0, 6, 0, 2, 0, 1],
 			[8, 6, 0, 1, 2, 3, 5, 7, 4],
@@ -82,22 +82,22 @@ const puzzleBoards = [
 		]
 	},
 	{
-		"cellNumber": 1,
-		"puzzleName": "ns_heart",
-		"tableWidth": 3,
-		"tableHeight": 3,
+		"order": 1,
+		"puzzleKey": "ns_heart",
+		"tableWidth": 2,
+		"tableHeight": 2,
 		"symbolSet": getSymbolSet(1, [vertexArrays.snake]),
-		"sudokuCells": [[1]],
+		"puzzleCells": [[1]],
 		"halfEdges": [[0, 0, 0, 7]]
 	}
 	// },
 	// {
-	// 	"cellNumber": 3,
-	// 	"puzzleName": "ns_heart",
+	// 	"order": 3,
+	// 	"puzzleKey": "ns_heart",
 	// 	"tableWidth": 3,
 	// 	"tableHeight": 3,
 	// 	"symbolSet": nineDigits,
-	// 	"sudokuCells": [],
+	// 	"puzzleCells": [],
 	// 	"halfEdges": []
 	// }
 ];

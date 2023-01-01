@@ -374,7 +374,7 @@ function createTile(polygons, name = "tile_string", id = -1) {
 		rel: relations,
 		id: id,
 		toString: () => name
-	}
+	};
 }
 
 /**
@@ -456,7 +456,7 @@ function startWalk(tile, orient) {
 		},
 		currTile: () => tile,
 		currOri: () => orient
-	}
+	};
 }
 
 /**

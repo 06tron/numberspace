@@ -27,9 +27,14 @@ function getMenuWidth() {
 	padding-top: 10px;
 }
 
-.thumb {
+.thumb { /* images should be at least 105px square */
 	width: 35%;
 	margin: 5%;
 	border-radius: 20%;
-	background-color: blue;
+}
+
+.info {
+	font-family: monospace;
+	white-space: pre;
+	padding-left: 50px;
 }
