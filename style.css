@@ -36,5 +36,5 @@ function getMenuWidth() {
 .info {
 	font-family: monospace;
 	white-space: pre;
-	padding-left: 50px;
+	padding-left: 40px;
 }

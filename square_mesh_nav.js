@@ -1,4 +1,4 @@
-let debugMode = 0;
+let debugMode = 1;
 
 /**
  * A point on the xy-plane. Defined like: "const p = { x: 24, y: 25 };". The
@@ -25,7 +25,7 @@ let debugMode = 0;
  * denominator to remove division from the equation. Instead of multiplying by
  * the square (n * n), (n * Math.sign(n)) could also be used.
  * @param {Point} p - The point to be compared with a given line.
- * @param {TwoPointLine} line - The line to be compared with a given point.
+ * @param {TwoPointLine} - The line to be compared with a given point.
  * @returns {number} A number greater than zero if the point is to the right of
  * the line (more specifically, further in the direction of the positive
  * x-axis). Otherwise, a negative number means the point is to the left, and a
@@ -41,7 +41,7 @@ function comparePointLine(p, { a, b }) {
  * is the extension of the line segment between two given points.
  * @param {Point} p - The first of the two points which define the first line.
  * @param {Point} q - The second of the two points which define the first line.
- * @param {TwoPointLine} line - The second line, given in two-point form.
+ * @param {TwoPointLine} - The second line, given in two-point form.
  * @returns {Point} The 2D point of intersection.
  */
 function lineIntersectSegment(p, q, { a, b }) {
@@ -462,8 +462,8 @@ function startWalk(tile, orient) {
 /**
  * Compares the steepness of the slopes of two lines. The statement
  * "compareSlope(f, g) > 0" is true if and only if f is steeper than g. 
- * @param {TwoPointLine} line1 - The first of two lines.
- * @param {TwoPointLine} line2 - The second of two lines.
+ * @param {TwoPointLine} - The first of two lines.
+ * @param {TwoPointLine} - The second of two lines.
  * @returns {number} A number greater than zero if line1 is steeper than line2.
  * Returns zero if the two lines have the same slope (absolute value), and a
  * number less than zero if line2 is steeper than line1.

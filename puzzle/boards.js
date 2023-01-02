@@ -29,6 +29,19 @@ const selectionVerts = (function () {
 	return vertexArrays.square.map(v => v ? (1 + step) : -step);
 })();
 
+/**
+ * @typedef SymbolSet
+ * @property {VertexArray[]} cell
+ * @property {VertexArray[]} selection
+ * @property {VertexArray[][]} glyph
+ */
+
+/**
+ * 
+ * @param {number} order 
+ * @param {VertexArray[]} glyphSet 
+ * @returns {SymbolSet}
+ */
 function getSymbolSet(order, glyphSet) {
 	return {
 		cell: symbolVariants(order, vertexArrays.square),
@@ -42,7 +55,29 @@ const nineDigits = getSymbolSet(3, vertexArrays.quantico.slice(1));
 const puzzleBoards = [
 	{
 		"order": 3,
-		"puzzleKey": "ns_name",
+		"puzzleKey": "hallway",
+		"altText": "ns_name", // change
+		"isHidden": false,
+		"tableWidth": 5,
+		"tableHeight": 5,
+		"symbolSet": nineDigits,
+		"puzzleCells": [
+			[5, 0, 9, 4, 8, 0, 0, 0, 0],
+			[0, 2, 0, 0, 0, 1, 0, 0, 3],
+			[0, 6, 0, 0, 0, 0, 0, 9, 0]
+		],
+		"halfEdges": [
+			[2, 0, 1, 0],
+			[2, 0, 2, 0],
+			[1, 0, 0, 0],
+			[1, 0, 3, 0]
+		]
+	},
+	{
+		"order": 3,
+		"puzzleKey": "name", // change
+		"altText": "ns_name", // change
+		"isHidden": false,
 		"tableWidth": 3,
 		"tableHeight": 3,
 		"symbolSet": nineDigits,
@@ -84,22 +119,13 @@ const puzzleBoards = [
 	{
 		"order": 1,
 		"puzzleKey": "ns_heart",
+		"isHidden": true,
 		"tableWidth": 2,
 		"tableHeight": 2,
 		"symbolSet": getSymbolSet(1, [vertexArrays.snake]),
 		"puzzleCells": [[1]],
 		"halfEdges": [[0, 0, 0, 7]]
 	}
-	// },
-	// {
-	// 	"order": 3,
-	// 	"puzzleKey": "ns_heart",
-	// 	"tableWidth": 3,
-	// 	"tableHeight": 3,
-	// 	"symbolSet": nineDigits,
-	// 	"puzzleCells": [],
-	// 	"halfEdges": []
-	// }
 ];
 
 // const puzzleBoards2 = {
