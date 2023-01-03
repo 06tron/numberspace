@@ -3,25 +3,36 @@ const cellMargin = 15;
 /**
  * The verts array describes a symbol centered in the unit square.
  * @param {number} order - A nonnegative integer.
- * @param {VertexArray} verts 
+ * @param {VertexArray} vertices
  * @returns {VertexArray[]}
  */
-function symbolVariants(order, verts) {
+function cellSymbols(order, vertices) {
 	const smallStep = 1 / (order * cellMargin + order + 1);
-	verts = verts.map(v => smallStep * (v * cellMargin + 1));
+	vertices = vertices.map(v => smallStep * (v * cellMargin + 1));
 	const largeStep = smallStep * (cellMargin + 1);
 	const variants = [];
 	for (let r = 0; r < order; ++r) {
 		for (let c = 0; c < order; ++c) {
 			const copy = [];
-			for (let i = 0; i < verts.length; i += 2) {
-				copy.push(verts[i] + c * largeStep);
-				copy.push(verts[i + 1] + r * largeStep);
+			for (let i = 0; i < vertices.length; i += 2) {
+				copy.push(vertices[i] + c * largeStep);
+				copy.push(vertices[i + 1] + r * largeStep);
 			}
 			variants.push(copy);
 		}
 	}
 	return variants;
+}
+
+/**
+ * 
+ * @param {FillStyle} fs 
+ * @returns {(vertices: VertexArray) => VertexArrayPolygon}
+ */
+function toPolygon(fs) {
+	return function (vertices) {
+		return { fillStyle: fs, verts: vertices };
+	};
 }
 
 const selectionVerts = (function () {
@@ -31,35 +42,45 @@ const selectionVerts = (function () {
 
 /**
  * @typedef SymbolSet
- * @property {VertexArray[]} cell
- * @property {VertexArray[]} selection
- * @property {VertexArray[][]} glyph
+ * @property {VertexArrayPolygon[]} whiteCell
+ * @property {VertexArrayPolygon[]} blueCell
+ * @property {VertexArrayPolygon[]} cellBorder
+ * @property {VertexArrayPolygon[][]} cellGlyph
  */
 
-/**
- * 
- * @param {number} order 
- * @param {VertexArray[]} glyphSet 
- * @returns {SymbolSet}
- */
-function getSymbolSet(order, glyphSet) {
-	return {
-		cell: symbolVariants(order, vertexArrays.square),
-		selection: symbolVariants(order, selectionVerts),
-		glyph: glyphSet.map(x => symbolVariants(order, x))
-	}
+function getSharedSymbols(order) {
+	const plainCell = cellSymbols(order, vertexArrays.square);
+	return [
+		plainCell.map(toPolygon("white")),
+		plainCell.map(toPolygon("lightsteelblue")),
+		cellSymbols(order, selectionVerts).map(toPolygon("coral"))
+	];
 }
 
-const nineDigits = getSymbolSet(3, vertexArrays.quantico.slice(1));
+function fullSymbolSet(sharedSymbols, order, glyphSet, ...styles) {
+	for (let i = styles.length; i < glyphSet.length; ++i) {
+		styles.push(styles[styles.length - 1]);
+	}
+	return {
+		whiteCell: sharedSymbols[0],
+		blueCell: sharedSymbols[1],
+		cellBorder: sharedSymbols[2],
+		cellGlyph: glyphSet.map(function (glyph, i) {
+			return cellSymbols(order, glyph).map(toPolygon(styles[i]));
+		})
+	};
+}
+
+const orderThree = getSharedSymbols(3);
+const nineDigits = fullSymbolSet(orderThree, 3, vertexArrays.quantico.slice(1), "black");
 
 const puzzleBoards = [
 	{
 		"order": 3,
 		"puzzleKey": "hallway",
-		"altText": "ns_name", // change
+		"altText": "A 3-region planar puzzle.",
 		"isHidden": false,
-		"tableWidth": 5,
-		"tableHeight": 5,
+		"displaySetup": [5, 3, 7, 4, 4],
 		"symbolSet": nineDigits,
 		"puzzleCells": [
 			[5, 0, 9, 4, 8, 0, 0, 0, 0],
@@ -67,40 +88,20 @@ const puzzleBoards = [
 			[0, 6, 0, 0, 0, 0, 0, 9, 0]
 		],
 		"halfEdges": [
-			[2, 0, 1, 0],
-			[2, 0, 2, 0],
 			[1, 0, 0, 0],
-			[1, 0, 3, 0]
+			[1, 0, 3, 0],
+			[2, 0, 1, 0],
+			[2, 0, 2, 0]
 		]
 	},
 	{
 		"order": 3,
-		"puzzleKey": "name", // change
-		"altText": "ns_name", // change
+		"puzzleKey": "courtyard",
+		"altText": "An 18-region nonplanar puzzle.",
 		"isHidden": false,
-		"tableWidth": 3,
-		"tableHeight": 3,
+		"displaySetup": [3, 3, 4, 4, 4],
 		"symbolSet": nineDigits,
-		"puzzleCells": [
-			[5, 2, 1, 0, 7, 4, 6, 3, 8],
-			[7, 4, 3, 0, 6, 0, 2, 0, 1],
-			[8, 6, 0, 1, 2, 3, 5, 7, 4],
-			[8, 9, 6, 3, 4, 5, 7, 1, 0],
-			[4, 5, 0, 0, 8, 7, 1, 2, 6],
-			[0, 3, 5, 7, 8, 1, 9, 4, 6],
-			[2, 8, 3, 4, 5, 0, 1, 6, 7],
-			[5, 1, 4, 6, 7, 2, 0, 3, 8],
-			[6, 0, 7, 3, 1, 8, 4, 5, 2],
-			[2, 0, 8, 9, 0, 4, 0, 0, 0],
-			[1, 4, 3, 5, 8, 6, 0, 0, 0],
-			[6, 7, 0, 3, 1, 2, 4, 8, 5],
-			[7, 0, 2, 4, 6, 5, 3, 8, 9],
-			[4, 7, 1, 9, 0, 2, 8, 3, 5],
-			[8, 6, 3, 9, 2, 1, 0, 4, 7],
-			[5, 0, 7, 6, 2, 1, 8, 4, 3],
-			[6, 0, 4, 3, 5, 8, 7, 2, 9],
-			[2, 3, 0, 7, 9, 4, 1, 0, 6]
-		],
+		"puzzleCells": [[0,2,0,0,7,4,6,0,8],[7,0,3,0,0,0,2,0,1],[8,6,0,0,2,3,0,0,4],[8,0,6,3,0,5,0,1,0],[4,5,0,0,8,7,1,0,6],[0,0,5,7,0,1,9,4,6],[2,0,3,4,5,0,1,0,7],[5,0,0,6,7,0,0,3,8],[6,0,0,0,1,8,0,0,2],[2,0,8,9,0,4,0,0,0],[1,4,3,5,0,6,0,0,0],[6,7,0,3,1,2,0,0,5],[7,0,0,0,6,5,3,0,9],[4,7,0,9,0,2,0,0,0],[8,0,0,9,2,1,0,4,7],[5,0,7,0,2,1,0,0,3],[6,0,0,0,5,8,0,2,9],[0,3,0,7,9,4,1,0,6]],
 		"halfEdges": [
 			[0, 1, 0, 0], [1, 2, 0, 0],
 			[3, 13, 0, 0], [13, 5, 0, 0],
@@ -120,9 +121,8 @@ const puzzleBoards = [
 		"order": 1,
 		"puzzleKey": "ns_heart",
 		"isHidden": true,
-		"tableWidth": 2,
-		"tableHeight": 2,
-		"symbolSet": getSymbolSet(1, [vertexArrays.snake]),
+		"displaySetup": [2, 2, 0, 0, 0],
+		"symbolSet": fullSymbolSet(getSharedSymbols(1), 1, [vertexArrays.snake], "black"),
 		"puzzleCells": [[1]],
 		"halfEdges": [[0, 0, 0, 7]]
 	}
@@ -147,43 +147,7 @@ const puzzleBoards = [
 // 			"links": [[0, 1, 0, 0], [0, 2, 2, 0], [1, 3, 2, 0], [2, 3, 0, 0]]
 // 		}
 // 	]
-// "cells": [
-// 	[5, 2, 1, 9, 7, 4, 6, 3, 8],
-// 	[7, 4, 3, 8, 6, 5, 2, 9, 1],
-// 	[8, 6, 9, 1, 2, 3, 5, 7, 4],
-// 	[8, 9, 6, 3, 4, 5, 7, 1, 2],
-// 	[4, 5, 9, 3, 8, 7, 1, 2, 6],
-// 	[2, 3, 5, 7, 8, 1, 9, 4, 6],
-// 	[2, 8, 3, 4, 5, 9, 1, 6, 7],
-// 	[5, 1, 4, 6, 7, 2, 9, 3, 8],
-// 	[6, 9, 7, 3, 1, 8, 4, 5, 2],
-// 	[2, 5, 8, 9, 7, 4, 1, 3, 6],
-// 	[1, 4, 3, 5, 8, 6, 2, 9, 7],
-// 	[6, 7, 9, 3, 1, 2, 4, 8, 5],
-// 	[7, 1, 2, 4, 6, 5, 3, 8, 9],
-// 	[4, 7, 1, 9, 6, 2, 8, 3, 5],
-// 	[8, 6, 3, 9, 2, 1, 5, 4, 7],
-// 	[5, 9, 7, 6, 2, 1, 8, 4, 3],
-// 	[6, 1, 4, 3, 5, 8, 7, 2, 9],
-// 	[2, 3, 8, 7, 9, 4, 1, 5, 6]
-// ],
-// "cells": [
-// 	[5, 2, 1, 0, 7, 4, 6, 3, 8],
-// 	[7, 4, 3, 0, 6, 0, 2, 0, 1],
-// 	[8, 6, 0, 1, 2, 3, 5, 7, 4],
-// 	[8, 9, 6, 3, 4, 5, 7, 1, 0],
-// 	[4, 5, 0, 0, 8, 7, 1, 2, 6],
-// 	[0, 3, 5, 7, 8, 1, 9, 4, 6],
-// 	[2, 8, 3, 4, 5, 0, 1, 6, 7],
-// 	[5, 1, 4, 6, 7, 2, 0, 3, 8],
-// 	[6, 0, 7, 3, 1, 8, 4, 5, 2],
-// 	[2, 0, 8, 9, 0, 4, 0, 0, 0],
-// 	[1, 4, 3, 5, 8, 6, 0, 0, 0],
-// 	[6, 7, 0, 3, 1, 2, 4, 8, 5],
-// 	[7, 0, 2, 4, 6, 5, 3, 8, 9],
-// 	[4, 7, 1, 9, 0, 2, 8, 3, 5],
-// 	[8, 6, 3, 9, 2, 1, 0, 4, 7],
-// 	[5, 0, 7, 6, 2, 1, 8, 4, 3],
-// 	[6, 0, 4, 3, 5, 8, 7, 2, 9],
-// 	[2, 3, 0, 7, 9, 4, 1, 0, 6]
-// ],
+
+// [[5,2,1,9,7,4,6,3,8],[7,4,3,8,6,5,2,9,1],[8,6,9,1,2,3,5,7,4],[8,9,6,3,4,5,7,1,2],[4,5,9,3,8,7,1,2,6],[2,3,5,7,8,1,9,4,6],[2,8,3,4,5,9,1,6,7],[5,1,4,6,7,2,9,3,8],[6,9,7,3,1,8,4,5,2],[2,5,8,9,7,4,1,3,6],[1,4,3,5,8,6,2,9,7],[6,7,9,3,1,2,4,8,5],[7,1,2,4,6,5,3,8,9],[4,7,1,9,6,2,8,3,5],[8,6,3,9,2,1,5,4,7],[5,9,7,6,2,1,8,4,3],[6,1,4,3,5,8,7,2,9],[2,3,8,7,9,4,1,5,6]]
+// [[5,2,0,0,7,4,6,0,8],[7,0,3,0,6,0,2,0,1],[8,6,0,0,2,3,5,7,4],[8,0,6,3,0,5,0,1,0],[4,5,0,0,8,7,1,0,6],[0,3,5,7,0,1,9,4,6],[2,0,3,4,5,0,1,6,7],[5,0,4,6,7,0,0,3,8],[6,0,0,3,1,8,4,5,2],[2,0,8,9,0,4,0,0,0],[1,4,3,5,8,6,0,0,0],[6,7,0,3,1,2,0,0,5],[7,0,2,0,6,5,3,0,9],[4,7,0,9,0,2,0,0,0],[8,0,0,9,2,1,0,4,7],[5,0,7,0,2,1,8,0,3],[6,0,0,0,5,8,0,2,9],[0,3,0,7,9,4,1,0,6]]
+// [[0,2,0,0,7,4,6,0,8],[7,0,3,0,0,0,2,0,1],[8,6,0,0,2,3,0,0,4],[8,0,6,3,0,5,0,1,0],[4,5,0,0,8,7,1,0,6],[0,0,5,7,0,1,9,4,6],[2,0,3,4,5,0,1,0,7],[5,0,0,6,7,0,0,3,8],[6,0,0,0,1,8,0,0,2],[2,0,8,9,0,4,0,0,0],[1,4,3,5,0,6,0,0,0],[6,7,0,3,1,2,0,0,5],[7,0,0,0,6,5,3,0,9],[4,7,0,9,0,2,0,0,0],[8,0,0,9,2,1,0,4,7],[5,0,7,0,2,1,0,0,3],[6,0,0,0,5,8,0,2,9],[0,3,0,7,9,4,1,0,6]]

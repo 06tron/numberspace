@@ -44,7 +44,7 @@ window.onload = function () {
  * @param {number} margin
  * @returns {VertexArray[]}
  */
- function symbolVariants(size, verts, margin) {
+ function cellSymbols(size, verts, margin) {
 	const smallStep = 1 / (size * margin + size + 1);
 	verts = verts.map(v => smallStep * (v * margin + 1));
 	const largeStep = smallStep * (margin + 1);
@@ -96,9 +96,9 @@ function regionIndex(size, screenIndex, ori) {
  */
 function sudokuGame(size, symbols, margin, puzzle) {
 	const area = size * size;
-	const cellVerts = symbolVariants(size, vertexArrays.square, margin);
-	const selectVerts = symbolVariants(size, getSelection(margin), margin);
-	const symbolVerts = symbols.map(s => symbolVariants(size, s, margin));
+	const cellVerts = cellSymbols(size, vertexArrays.square, margin);
+	const selectVerts = cellSymbols(size, getSelection(margin), margin);
+	const symbolVerts = symbols.map(s => cellSymbols(size, s, margin));
 	const regions = puzzle.cells.map(createRegion);
 	puzzle.links.forEach(q => regions[q[0]].linkTo(regions[q[1]], q[2], q[3]));
 	// replace linkTo with a link function that takes 4 indices?

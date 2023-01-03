@@ -3,32 +3,26 @@ const rangeBound = 5;
 const menuWidth = 300;
 
 /**
- * 
- * @param {number} n 
- * @param {number} order 
- * @returns {number}
- */
-function modulo(n, order) {
-	return (n % order + order) % order;
-}
-
-/**
- * @typedef Level
- * @property {number} x
- * @property {number} y
- * @property {Walk} walk
- * @property {() => string[]} matrix
+ * Both the x and y values are integer distances measured in the side length of
+ * a single sudoku cell. Represents an element of the group...
+ * @typedef SudokuLevel
+ * @property {number} x - The horizontal distance from this level to the origin.
+ * @property {number} y - The vertical distance from this level to the origin.
+ * @property {Walk} walk - A walk object which contains...
+ * @property {() => string[]} matrix - A string representation of the level
+ * matrix, split into an array of three separate rows.
  */
 
 /**
  * 
  * @param {Tile} startTile 
- * @returns {Level}
+ * @param {number[]} displaySetup
+ * @returns {SudokuLevel}
  */
-function sudokuLevel(startTile) {
+function sudokuLevel(startTile, displaySetup) {
 	const level = {
-		x: 0,
-		y: 0,
+		x: displaySetup[2],
+		y: displaySetup[3],
 		walk: startWalk(startTile, getOri(0)),
 		matrix: function () {
 			const orient = level.walk.currOri();
@@ -47,9 +41,43 @@ function sudokuLevel(startTile) {
 }
 
 /**
+ * @typedef SudokuVertex
+ * @property {number} i
+ * @property {number} j
+ * @property {() => string} toString
+ */
+
+/**
+ * 
+ * @param {number[]} displaySetup
+ * @returns {SudokuVertex}
+ */
+function sudokuVertex(displaySetup) {
+	const vertex = {
+		i: 0,
+		j: displaySetup[4],
+		toString: () => vertex.i + "-" + vertex.j
+	};
+	return vertex;
+}
+
+/**
+ * An implementation of the modulo operation. Differs from the '%' operator when
+ * the dividend is negative.
+ * @param {number} n - An integer dividend.
+ * @param {number} order - A positive integer divisor, in this case the order of
+ * some puzzle's board.
+ * @returns {number} An integer remainder which is at least zero and less than
+ * the divisor.
+ */
+function modulo(n, order) {
+	return (n % order + order) % order;
+}
+
+/**
  * 
  * @param {number} order 
- * @param {Level} level 
+ * @param {SudokuLevel} level 
  * @returns {number}
  */
 function regionIndex(order, level) {
@@ -66,34 +94,14 @@ function regionIndex(order, level) {
 }
 
 /**
- * @typedef Vertex
- * @property {number} i
- * @property {number} j
- * @property {() => string} toString
- */
-
-/**
- * 
- * @returns {Vertex}
- */
-function sudokuVertex() {
-	const vertex = {
-		i: 0,
-		j: 0,
-		toString: () => vertex.i + "-" + vertex.j
-	};
-	return vertex;
-}
-
-/**
  * 
  * @param {number} order 
- * @param {Vertex} vertex 
- * @param {Level} level 
+ * @param {SudokuVertex} vertex 
+ * @param {SudokuLevel} level 
  * @returns {(directIndex: number) => boolean}
  */
 function startFlight(order, vertex, level) {
-	return function attemptStep(directIndex) {
+	return function (directIndex) {
 		const direct = getDir(directIndex);
 		const axis = direct.isVertical ? 'y' : 'x';
 		let targetRow, stepSize;
@@ -120,49 +128,41 @@ function startFlight(order, vertex, level) {
 /**
  * @typedef Region
  * @property {Tile} tile
- * @property {(cellIndex: number) => null} reselect
+ * @property {(cellIndex: number) => void} reselect
  * @property {(cellIndex: number, glyphIndex: number) => boolean} overwrite
  */
 
 /**
  * 
- * @param {number} numCells 
+ * @param {number} area 
  * @param {SymbolSet} symbolSet 
  * @returns {Region}
  */
-function createRegion(numCells, symbolSet) {
+function createRegion(area, symbolSet) {
 	return function (cells, id) {
-		const polygons = new Array(1 + numCells * 2).fill(null);
-		for (let i = 0; i < numCells; ++i) {
-			polygons[i + 1] = {
-				fillStyle: "white",
-				verts: symbolSet.cell[i] // avoid making so many objects?
-			};
+		const polygons = new Array(1 + area * 2).fill(null);
+		for (let i = 0; i < area; ++i) {
 			if (cells[i] > 0) {
-				polygons[i + 1].fillStyle = "lightsteelblue";
-				polygons[i + 1 + numCells] = {
-					fillStyle: "black",
-					verts: symbolSet.glyph[cells[i] - 1][i]
-				};
+				polygons[i + 1] = symbolSet.blueCell[i];
+				polygons[i + 1 + area] = symbolSet.cellGlyph[cells[i] - 1][i];
+			} else {
+				polygons[i + 1] = symbolSet.whiteCell[i];
 			}
 		}
 		return {
 			tile: createTile(polygons, cells.join(), id),
 			reselect: function (cellIndex = -1) {
-				polygons[0] = cellIndex < 0 ? null : {
-					fillStyle: "darkgrey",
-					verts: symbolSet.selection[cellIndex]
-				};
-				return null;
+				polygons[0] = cellIndex < 0
+					? null
+					: symbolSet.cellBorder[cellIndex];
 			},
 			overwrite: function (cellIndex, glyphIndex) {
-				if (cells[cellIndex] != 0) {
+				if (cells[cellIndex] != 0 && !debugMode) {
 					return false;
 				}
-				polygons[cellIndex + 1 + numCells] = glyphIndex < 0 ? null : {
-					fillStyle: "black",
-					verts: symbolSet.glyph[glyphIndex][cellIndex]
-				};
+				polygons[cellIndex + 1 + area] = glyphIndex < 0
+					? null
+					: symbolSet.cellGlyph[glyphIndex][cellIndex];
 				return true;
 			}
 		};
@@ -172,9 +172,9 @@ function createRegion(numCells, symbolSet) {
 /**
  * @typedef SudokuGame
  * @property {(target: Point) => SudokuGame} moveMouse
- * @property {(canvas: HTMLCanvasElement) => SudokuGame} recomputeLength
+ * @property {(HTMLCanvasElement) => SudokuGame} recomputeLength
  * @property {(glyphIndex: number) => SudokuGame} overwriteInput
- * @property {(ctx: CanvasRenderingContext2D) => null} draw
+ * @property {(ctx: CanvasRenderingContext2D) => void} draw
  */
 
 /**
@@ -185,8 +185,7 @@ function createRegion(numCells, symbolSet) {
 function startGame({
 	order,
 	puzzleKey,
-	tableWidth,
-	tableHeight,
+	displaySetup,
 	symbolSet,
 	puzzleCells,
 	halfEdges
@@ -197,9 +196,9 @@ function startGame({
 		const target = regions[targetId].tile;
 		start.linkTo(target, getDir(dirIndex), getOri(oriIndex));
 	});
-	const vertex = sudokuVertex(); // i is regionIndex, j is cellIndex
+	const vertex = sudokuVertex(displaySetup); // i is regionIndex, j is cellIndex
 	regions[vertex.i].reselect(vertex.j);
-	const level = sudokuLevel(regions[vertex.i].tile);
+	const level = sudokuLevel(regions[vertex.i].tile, displaySetup);
 	let mouse = { x: 0, y: 0 };
 	let paused = true;
 	const input = puzzleCells.map(region => region.map(x => x));
@@ -233,34 +232,44 @@ function startGame({
 				return this;
 			}
 			regions[vertex.i].reselect();
+			let wallsHit;
 			do {
+				wallsHit = 0;
 				if (steps.x > 0) {
-					if (!attemptStep(0)) {
-						paused = true;
-						break;
+					if (attemptStep(0)) {
+						--steps.x;
+					} else {
+						++wallsHit;
 					}
-					--steps.x;
 				} else if (steps.x < 0) {
-					if (!attemptStep(1)) {
-						paused = true;
-						break;
+					if (attemptStep(1)) {
+						++steps.x;
+					} else {
+						++wallsHit;
 					}
-					++steps.x;
+				} else {
+					++wallsHit;
 				}
 				if (steps.y > 0) {
-					if (!attemptStep(2)) {
-						paused = true;
-						break;
+					if (attemptStep(2)) {
+						--steps.y;
+					} else {
+						++wallsHit;
 					}
-					--steps.y;
 				} else if (steps.y < 0) {
-					if (!attemptStep(3)) {
-						paused = true;
-						break;
+					if (attemptStep(3)) {
+						++steps.y;
+					} else {
+						++wallsHit;
 					}
-					++steps.y;
+				} else {
+					++wallsHit;
 				}
-			} while (steps.x != 0 && steps.y != 0);
+				if (wallsHit == 2) {
+					paused = true;
+					break;
+				}
+			} while (steps.x != 0 || steps.y != 0);
 			regions[vertex.i].reselect(vertex.j);
 			pTL = {
 				x: origin.x + Math.floor(level.x / order) * length * order,
@@ -277,6 +286,7 @@ function startGame({
 			displayWidth = width;
 			displayHeight = height;
 			paused = true;
+			let [tableWidth, tableHeight] = displaySetup;
 			const horizontalFit = (width - tableMargin * 2) / tableWidth;
 			const verticalFit = (height - tableMargin * 2) / tableHeight;
 			length = Math.min(horizontalFit, verticalFit) / order;
@@ -309,14 +319,29 @@ function startGame({
 				};
 			}
 			tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
-			if (debugMode) {		
+			if (debugMode) {
 				const p = document.getElementById("debug");
-				p.innerText = flightData(vertex, level, mouse);
+				p.innerText = flightData(vertex, level, mouse, input);
 			}
-			return null;
 		},
-		setPaused: function () {
+		togglePaused: function () {
 			paused = !paused;
+			return this;
+		},
+		getInput: () => JSON.stringify(input),
+		resetState: function () {
+			paused = true;
+			regions[vertex.i].reselect();
+			vertex.i = 0;
+			vertex.j = 0;
+			regions[vertex.i].reselect(vertex.j);
+			level.x = 0;
+			level.y = 0;
+			level.walk.from(regions[vertex.i].tile, getOri(0));
+			pTL = {
+				x: origin.x + Math.floor(level.x / order) * length * order,
+				y: origin.y + Math.floor(level.y / order) * length * order
+			};
 			return this;
 		}
 	}];
@@ -333,17 +358,18 @@ function pointToString({ x, y }) {
 
 /**
  * 
- * @param {Vertex} vertex 
- * @param {Level} level 
+ * @param {SudokuVertex} vertex 
+ * @param {SudokuLevel} level 
  * @param {Point} mouse 
  * @returns {string}
  */
-function flightData(vertex, level, mouse) { // when should this be updated?
+function flightData(vertex, level, mouse, input) { // when should this be updated?
 	return [
 		dataPoint("vertex", vertex), // add order and number of regions to debug screen elsewhere
 		dataPoint("level", ...level.matrix()),
 		dataPoint("mouse", pointToString(mouse)),
-		dataPoint("clues", level.walk.currTile())
+		dataPoint("clues", level.walk.currTile()),
+		dataPoint("input", input[vertex.i])
 	].join("\n\n");
 }
 
@@ -373,6 +399,16 @@ function insertThumb({ puzzleKey, altText, isHidden }) {
 	document.getElementById("puzzles").appendChild(img);
 }
 
+function debugKeys(game, pressedKey, ctx) {
+	switch (pressedKey) {
+		case 'p':
+			game.togglePaused().draw(ctx);
+			break;
+		case 'o':
+			console.log(game.getInput());
+	}
+}
+
 function eventHandlers(canvas) {
 	let puzzleKey = puzzleBoards[0].puzzleKey;
 	const games = Object.fromEntries(puzzleBoards.map(startGame));
@@ -386,22 +422,30 @@ function eventHandlers(canvas) {
 			games[puzzleKey].moveMouse(target).draw(ctx);
 		},
 		onClick: function (event) {
-			if (event.target.className != "thumb")  {
-				return;
+			if (event.target.className == "thumb") {
+				puzzleKey = event.target.id; // add name to debug screen
+				games[puzzleKey].recomputeLength(canvas).draw(ctx);
 			}
-			puzzleKey = event.target.id; // add name to debug screen
-			games[puzzleKey].recomputeLength(canvas).draw(ctx);
 		},
 		onKeyDown: function (event) {
-			if (event.key == "Backspace" || event.key == "Delete") {
-				games[puzzleKey].overwriteInput().draw(ctx);
-			} else if (isFinite(event.key) && event.key != ' ') {
+			switch (event.key) {
+				case "Backspace":
+				case "Delete":
+					games[puzzleKey].overwriteInput().draw(ctx);
+					return;
+				case "Escape":
+					games[puzzleKey].resetState().draw(ctx);
+					return;
+				case "F3":
+					debugMode = !debugMode;
+					document.getElementById("debug").innerText = "";
+				case ' ':
+					return;
+			}
+			if (isFinite(event.key)) {
 				games[puzzleKey].overwriteInput(parseInt(event.key) - 1).draw(ctx);
-			} else if (event.key == "F3") {
-				debugMode = !debugMode;
-				document.getElementById("debug").innerText = "";
-			} else if (event.key == 'a') {
-				games[puzzleKey].setPaused().draw(ctx);
+			} else if (debugMode) {
+				debugKeys(games[puzzleKey], event.key, ctx);
 			}
 		},
 		onResize: function () {
