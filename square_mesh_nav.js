@@ -1,5 +1,3 @@
-let debugMode = 1;
-
 /**
  * A point on the xy-plane. Defined like: "const p = { x: 24, y: 25 };". The
  * optional outL and outR properties are flags used in the drawPolygon function.
@@ -575,7 +573,7 @@ function tileTree(walk, pTL, origin, len, limits, context) {
 (function main() {
 	console.log(main);
 	test_transferTo();
-	const abc = ["A", "B", "C"].map(x => createTile(x));
+	const abc = ["A", "B", "C"].map(x => createTile(undefined, x));
 	test_linkTo(abc);
 	test_walkTo(abc);
 })();

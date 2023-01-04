@@ -1,6 +1,7 @@
-const tableMargin = 80;  // make not global?
+const tableMargin = 50;  // make not global?
 const rangeBound = 5;
-const menuWidth = 300;
+const initialMenuWidth = 300;
+let debugMode = 0;
 
 /**
  * Both the x and y values are integer distances measured in the side length of
@@ -56,9 +57,54 @@ function sudokuVertex(displaySetup) {
 	const vertex = {
 		i: 0,
 		j: displaySetup[4],
-		toString: () => vertex.i + "-" + vertex.j
+		toString: () => `${vertex.i}-${vertex.j}`
 	};
 	return vertex;
+}
+
+/**
+ * 
+ * @param {string} name 
+ * @param  {...any} content 
+ * @returns {string}
+ */
+function dataPoint(name, ...content) {
+	return `${name.padStart(7, ' ')}: ${content.join("\n         ")}`;
+}
+
+/**
+ * 
+ * @param {Point}
+ * @returns {string}
+ */
+function pointToString({ x, y }) {
+	return `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+}
+
+/**
+ * 
+ * @param {SudokuVertex} vertex 
+ * @param {SudokuLevel} level 
+ * @param {Point} mouse 
+ * @returns {string}
+ */
+function flightData(input, vertex, level, mouse) {
+	return [
+		dataPoint("mouse", pointToString(mouse)),
+		dataPoint("clues", level.walk.currTile()),
+		dataPoint("input", input[vertex.i]),
+		dataPoint("vertex", vertex),
+		dataPoint("level", ...level.matrix())
+	].join("\n\n");
+}
+
+function boardData(order, puzzleKey, input, length) {
+	return [
+		dataPoint("order", order),
+		dataPoint("title", puzzleKey),
+		dataPoint("regions", input.length),
+		dataPoint("length", length.toFixed(4))
+	].join("\n\n");
 }
 
 /**
@@ -126,6 +172,14 @@ function startFlight(order, vertex, level) {
 }
 
 /**
+ * @typedef SymbolSet
+ * @property {VertexArrayPolygon[]} whiteCell
+ * @property {VertexArrayPolygon[]} blueCell
+ * @property {VertexArrayPolygon[]} cellBorder
+ * @property {VertexArrayPolygon[][]} cellGlyph
+ */
+
+/**
  * @typedef Region
  * @property {Tile} tile
  * @property {(cellIndex: number) => void} reselect
@@ -136,7 +190,7 @@ function startFlight(order, vertex, level) {
  * 
  * @param {number} area 
  * @param {SymbolSet} symbolSet 
- * @returns {Region}
+ * @returns {(cells: number[], id: number) => Region}
  */
 function createRegion(area, symbolSet) {
 	return function (cells, id) {
@@ -169,6 +223,26 @@ function createRegion(area, symbolSet) {
 	};
 }
 
+function limitsFrom(order, level, length, origin) {
+	// use display width/height instead?
+	// range = {
+	// 	west: Math.min(rangeBound, Math.ceil(origin.x / (length * order))),
+	// 	north: Math.min(rangeBound, Math.ceil(origin.y / (length * order))),
+	// };
+	// limits = [
+	// 	range.west + tableWidth - Math.floor(level.x / order), range.west + Math.floor(level.x / order),
+	// 	range.north + tableHeight - Math.floor(level.y / order), range.north + Math.floor(level.y / order)
+	// ];
+	return [3, 3, 3, 3];
+}
+
+function topLeftOfRegion(order, level, length, origin) {
+	return {
+		x: origin.x + Math.floor(level.x / order) * length * order,
+		y: origin.y + Math.floor(level.y / order) * length * order
+	};
+}
+
 /**
  * @typedef SudokuGame
  * @property {(target: Point) => SudokuGame} moveMouse
@@ -178,7 +252,7 @@ function createRegion(area, symbolSet) {
  */
 
 /**
- * define PuzzleBoard in boards.js
+ * length is length of box, so equal to the region length divided by order
  * @param {PuzzleBoard} 
  * @returns {[string, SudokuGame]}
  */
@@ -191,32 +265,47 @@ function startGame({
 	halfEdges
 }) {
 	const regions = puzzleCells.map(createRegion(order * order, symbolSet));
-	halfEdges.forEach(function ([startId, targetId, dirIndex, oriIndex]) {
+	const input = puzzleCells.map(regionCells => regionCells.map(x => x));
+	const vertex = sudokuVertex(displaySetup);
+	const level = sudokuLevel(regions[vertex.i].tile, displaySetup);
+	regions[vertex.i].reselect(vertex.j);
+	halfEdges.forEach(function ([startId, targetId, direct, orient]) {
 		const start = regions[startId].tile;
 		const target = regions[targetId].tile;
-		start.linkTo(target, getDir(dirIndex), getOri(oriIndex));
+		start.linkTo(target, getDir(direct), getOri(orient));
 	});
-	const vertex = sudokuVertex(displaySetup); // i is regionIndex, j is cellIndex
-	regions[vertex.i].reselect(vertex.j);
-	const level = sudokuLevel(regions[vertex.i].tile, displaySetup);
 	let mouse = { x: 0, y: 0 };
 	let paused = true;
-	const input = puzzleCells.map(region => region.map(x => x));
-	let length; // length of box, so regionLength / order
-	// let range;
-	let origin;
-	let pTL;
 	let displayWidth;
 	let displayHeight;
-	// things that change:
-	// sizing (length, range, origin, height, width)
-	// state (level, vertex, paused, mouse)
-	// sizing and state (regionTL, limits)
-	let limits = [3, 3, 3, 3];
+	let length;
+	let origin;
+	let limits;
+	let pTL;
 	const xBox = target => Math.floor((target.x - origin.x) / length);
 	const yBox = target => Math.floor((target.y - origin.y) / length);
 	const attemptStep = startFlight(order, vertex, level);
 	return [puzzleKey, {
+		overwriteInput: function (glyphIndex = -1) {
+			if (regions[vertex.i].overwrite(vertex.j, glyphIndex)) {
+				input[vertex.i][vertex.j] = glyphIndex + 1;
+			}
+			return this;
+		},
+		getInput: () => JSON.stringify(input),
+		resetState: function () { // call this on load?
+			regions[vertex.i].reselect();
+			vertex.i = 0;
+			vertex.j = displaySetup[4];
+			regions[vertex.i].reselect(vertex.j);
+			level.x = displaySetup[2];
+			level.y = displaySetup[3];
+			level.walk.from(regions[vertex.i].tile, getOri(0));
+			paused = true;
+			limits = limitsFrom();
+			pTL = topLeftOfRegion(order, level, length, origin);
+			return this;
+		},
 		moveMouse: function (target) {
 			if (paused) {
 				paused = xBox(target) != level.x || yBox(target) != level.y;
@@ -234,36 +323,28 @@ function startGame({
 			regions[vertex.i].reselect();
 			let wallsHit;
 			do {
-				wallsHit = 0;
+				wallsHit = 2;
 				if (steps.x > 0) {
 					if (attemptStep(0)) {
 						--steps.x;
-					} else {
-						++wallsHit;
+						--wallsHit;
 					}
 				} else if (steps.x < 0) {
 					if (attemptStep(1)) {
 						++steps.x;
-					} else {
-						++wallsHit;
+						--wallsHit;
 					}
-				} else {
-					++wallsHit;
 				}
 				if (steps.y > 0) {
 					if (attemptStep(2)) {
 						--steps.y;
-					} else {
-						++wallsHit;
+						--wallsHit;
 					}
 				} else if (steps.y < 0) {
 					if (attemptStep(3)) {
 						++steps.y;
-					} else {
-						++wallsHit;
+						--wallsHit;
 					}
-				} else {
-					++wallsHit;
 				}
 				if (wallsHit == 2) {
 					paused = true;
@@ -271,21 +352,19 @@ function startGame({
 				}
 			} while (steps.x != 0 || steps.y != 0);
 			regions[vertex.i].reselect(vertex.j);
-			pTL = {
-				x: origin.x + Math.floor(level.x / order) * length * order,
-				y: origin.y + Math.floor(level.y / order) * length * order
-			};
-			// limits = [
-			// 	range.west + tableWidth - Math.floor(level.x / order), range.west + Math.floor(level.x / order),
-			// 	range.north + tableHeight - Math.floor(level.y / order), range.north + Math.floor(level.y / order)
-			// ];
 			mouse = target;
+			limits = limitsFrom();
+			pTL = topLeftOfRegion(order, level, length, origin);
+			return this;
+		},
+		togglePaused: function () {
+			paused = !paused;
 			return this;
 		},
 		recomputeLength: function ({ width, height }) {
+			paused = true;
 			displayWidth = width;
 			displayHeight = height;
-			paused = true;
 			let [tableWidth, tableHeight] = displaySetup;
 			const horizontalFit = (width - tableMargin * 2) / tableWidth;
 			const verticalFit = (height - tableMargin * 2) / tableHeight;
@@ -294,19 +373,11 @@ function startGame({
 				x: (width - tableWidth * length * order) / 2,
 				y: (height - tableHeight * length * order) / 2
 			};
-			pTL = {
-				x: origin.x + Math.floor(level.x / order) * length * order,
-				y: origin.y + Math.floor(level.y / order) * length * order
-			};
-			// range = {
-			// 	west: Math.min(rangeBound, Math.ceil(origin.x / (length * order))),
-			// 	north: Math.min(rangeBound, Math.ceil(origin.y / (length * order))),
-			// };
-			return this;
-		},
-		overwriteInput: function (glyphIndex = -1) {
-			if (regions[vertex.i].overwrite(vertex.j, glyphIndex)) {
-				input[vertex.i][vertex.j] = glyphIndex + 1;
+			limits = limitsFrom();
+			pTL = topLeftOfRegion(order, level, length, origin);
+			if (debugMode) {
+				const p = document.getElementById("board");
+				p.innerText = boardData(order, puzzleKey, input, length);
 			}
 			return this;
 		},
@@ -320,67 +391,69 @@ function startGame({
 			}
 			tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 			if (debugMode) {
-				const p = document.getElementById("debug");
-				p.innerText = flightData(vertex, level, mouse, input);
+				const p = document.getElementById("flight");
+				p.innerText = flightData(input, vertex, level, mouse);
 			}
-		},
-		togglePaused: function () {
-			paused = !paused;
-			return this;
-		},
-		getInput: () => JSON.stringify(input),
-		resetState: function () {
-			paused = true;
-			regions[vertex.i].reselect();
-			vertex.i = 0;
-			vertex.j = 0;
-			regions[vertex.i].reselect(vertex.j);
-			level.x = 0;
-			level.y = 0;
-			level.walk.from(regions[vertex.i].tile, getOri(0));
-			pTL = {
-				x: origin.x + Math.floor(level.x / order) * length * order,
-				y: origin.y + Math.floor(level.y / order) * length * order
-			};
-			return this;
 		}
 	}];
 }
 
-/**
- * 
- * @param {Point}
- * @returns {string}
- */
-function pointToString({ x, y }) {
-	return `(${x.toFixed(2)}, ${y.toFixed(2)})`;
+function onMouseMove({ clientX, clientY }, menuWidth, game, ctx) {
+	const target = {
+		x: clientX - menuWidth,
+		y: clientY
+	};
+	game.moveMouse(target).draw(ctx);
 }
 
-/**
- * 
- * @param {SudokuVertex} vertex 
- * @param {SudokuLevel} level 
- * @param {Point} mouse 
- * @returns {string}
- */
-function flightData(vertex, level, mouse, input) { // when should this be updated?
-	return [
-		dataPoint("vertex", vertex), // add order and number of regions to debug screen elsewhere
-		dataPoint("level", ...level.matrix()),
-		dataPoint("mouse", pointToString(mouse)),
-		dataPoint("clues", level.walk.currTile()),
-		dataPoint("input", input[vertex.i])
-	].join("\n\n");
+function onResize(menuWidth, game, canvas, ctx) {
+	canvas.width = window.innerWidth - menuWidth;
+	canvas.height = window.innerHeight;
+	game.recomputeLength(canvas).draw(ctx);
 }
 
-/**
- * 
- * @param {string} name 
- * @param  {...any} content 
- * @returns {string}
- */
-function dataPoint(name, ...content) {
-	return name.padStart(7, ' ') + ": " + content.join("\n         ");
+function debugKeys(key, game, ctx) {
+	switch (key) {
+		case 'p':
+			game.togglePaused().draw(ctx);
+			break;
+		case 'o':
+			console.log(game.getInput());
+	}
+}
+
+function onKeyDown({ key, repeat }, game, ctx) {
+	if (repeat) {
+		return;
+	}
+	switch (key) {
+		case "Backspace":
+		case "Delete":
+			game.overwriteInput().draw(ctx);
+			return;
+		case "Escape":
+			game.resetState().draw(ctx);
+			return;
+		case "F3":
+			debugMode = !debugMode;
+			document.getElementById("board").innerText = "";
+			document.getElementById("flight").innerText = "";
+		case ' ':
+			return;
+	}
+	if (isFinite(key)) {
+		game.overwriteInput(parseInt(key) - 1).draw(ctx);
+	} else if (debugMode) {
+		debugKeys(key, game, ctx);
+	}
+}
+
+function onClick({ target }, games, puzzleKey, canvas, ctx) {
+	if (target.className == "thumb") {
+		puzzleKey = target.id;
+		games[puzzleKey].recomputeLength(canvas).draw(ctx);
+	}
+	return puzzleKey;
 }
 
 /**
@@ -394,64 +467,30 @@ function insertThumb({ puzzleKey, altText, isHidden }) {
 	const img = document.createElement("img");
 	img.id = puzzleKey;
 	img.className = "thumb";
-	img.src = "graphics/" + puzzleKey + ".png";
+	img.src = `graphics/${puzzleKey}.png`;
 	img.alt = altText;
 	document.getElementById("puzzles").appendChild(img);
 }
 
-function debugKeys(game, pressedKey, ctx) {
-	switch (pressedKey) {
-		case 'p':
-			game.togglePaused().draw(ctx);
-			break;
-		case 'o':
-			console.log(game.getInput());
-	}
-}
-
-function eventHandlers(canvas) {
-	let puzzleKey = puzzleBoards[0].puzzleKey;
-	const games = Object.fromEntries(puzzleBoards.map(startGame));
+function getEventHandler(canvas, menuWidth) {
 	const ctx = canvas.getContext("2d");
-	return {
-		onMouseMove: function (event) {
-			const target = {
-				x: event.clientX - menuWidth,
-				y: event.clientY
-			};
-			games[puzzleKey].moveMouse(target).draw(ctx);
-		},
-		onClick: function (event) {
-			if (event.target.className == "thumb") {
-				puzzleKey = event.target.id; // add name to debug screen
-				games[puzzleKey].recomputeLength(canvas).draw(ctx);
-			}
-		},
-		onKeyDown: function (event) {
-			switch (event.key) {
-				case "Backspace":
-				case "Delete":
-					games[puzzleKey].overwriteInput().draw(ctx);
-					return;
-				case "Escape":
-					games[puzzleKey].resetState().draw(ctx);
-					return;
-				case "F3":
-					debugMode = !debugMode;
-					document.getElementById("debug").innerText = "";
-				case ' ':
-					return;
-			}
-			if (isFinite(event.key)) {
-				games[puzzleKey].overwriteInput(parseInt(event.key) - 1).draw(ctx);
-			} else if (debugMode) {
-				debugKeys(games[puzzleKey], event.key, ctx);
-			}
-		},
-		onResize: function () {
-			canvas.width = window.innerWidth - menuWidth;
-			canvas.height = window.innerHeight;
-			games[puzzleKey].recomputeLength(canvas).draw(ctx);
+	const games = Object.fromEntries(puzzleBoards.map(startGame));
+	let gameKey = puzzleBoards[0].puzzleKey;
+	return function (event) {
+		switch (event.type) {
+			case "mousemove":
+				onMouseMove(event, menuWidth, games[gameKey], ctx);
+				break; // limit number of times per second this runs?
+			case "ns_menu_resize":
+				menuWidth = event.detail;
+			case "resize":
+				onResize(menuWidth, games[gameKey], canvas, ctx);
+				break;
+			case "keydown":
+				onKeyDown(event, games[gameKey], ctx);
+				break;
+			case "click":
+				gameKey = onClick(event, games, gameKey, canvas, ctx);
 		}
 	};
 }
@@ -459,10 +498,10 @@ function eventHandlers(canvas) {
 window.onload = function () {
 	puzzleBoards.forEach(insertThumb);
 	const canvas = document.getElementById("canvas");
-	const ns = eventHandlers(canvas);
-	canvas.addEventListener("mousemove", ns.onMouseMove);
-	window.addEventListener("click", ns.onClick);
-	window.addEventListener("keydown", ns.onKeyDown);
-	window.addEventListener("resize", ns.onResize);
-	ns.onResize(); // ^ something other than window?
+	const eventHandler = getEventHandler(canvas, initialMenuWidth);
+	canvas.addEventListener("mousemove", eventHandler);
+	window.addEventListener("resize", eventHandler);
+	window.addEventListener("keydown", eventHandler);
+	window.addEventListener("click", eventHandler);
+	eventHandler({ type: "resize" });
 }
