@@ -34,6 +34,12 @@ function getMenuWidth() {
 .thumb {
 	width: 35%;
 	margin: 5%;
+	box-shadow: 0px 0px 0px 0px;
+	transition: box-shadow 100ms linear;
+}
+
+.selected {
+	box-shadow: 0px 0px 0px 3px coral;
 }
 
 .info {

@@ -1,5 +1,5 @@
 const tableMargin = 50;  // make not global?
-const rangeBound = 5;
+const drawBound = 5;
 const initialMenuWidth = 300;
 let debugMode = 0;
 
@@ -223,24 +223,18 @@ function createRegion(area, symbolSet) {
 	};
 }
 
-function limitsFrom(order, level, length, origin) {
-	// use display width/height instead?
-	// range = {
-	// 	west: Math.min(rangeBound, Math.ceil(origin.x / (length * order))),
-	// 	north: Math.min(rangeBound, Math.ceil(origin.y / (length * order))),
-	// };
-	// limits = [
-	// 	range.west + tableWidth - Math.floor(level.x / order), range.west + Math.floor(level.x / order),
-	// 	range.north + tableHeight - Math.floor(level.y / order), range.north + Math.floor(level.y / order)
-	// ];
-	return [3, 3, 3, 3];
+function topLeftOfRegion(order, level, length, origin, pTL) {
+	pTL.x = origin.x + Math.floor(level.x / order) * length * order;
+	pTL.y = origin.y + Math.floor(level.y / order) * length * order;
 }
 
-function topLeftOfRegion(order, level, length, origin) {
-	return {
-		x: origin.x + Math.floor(level.x / order) * length * order,
-		y: origin.y + Math.floor(level.y / order) * length * order
-	};
+function setLimits(len, canvasWidth, canvasHeight, pTL, limits) {
+	const west = pTL.x / len;
+	const north = pTL.y / len;
+	limits[0] = Math.min(drawBound, Math.ceil(canvasWidth / len - west) - 1);
+	limits[1] = Math.min(drawBound, Math.ceil(west));
+	limits[2] = Math.min(drawBound, Math.ceil(canvasHeight / len - north) - 1);
+	limits[3] = Math.min(drawBound, Math.ceil(north));
 }
 
 /**
@@ -276,12 +270,12 @@ function startGame({
 	});
 	let mouse = { x: 0, y: 0 };
 	let paused = true;
-	let displayWidth;
-	let displayHeight;
+	let canvasWidth;
+	let canvasHeight;
 	let length;
-	let origin;
-	let limits;
-	let pTL;
+	const origin = { x: 0, y: 0 };
+	const pTL = { x: 0, y: 0 };
+	const limits = new Array(4);
 	const xBox = target => Math.floor((target.x - origin.x) / length);
 	const yBox = target => Math.floor((target.y - origin.y) / length);
 	const attemptStep = startFlight(order, vertex, level);
@@ -302,8 +296,8 @@ function startGame({
 			level.y = displaySetup[3];
 			level.walk.from(regions[vertex.i].tile, getOri(0));
 			paused = true;
-			limits = limitsFrom();
-			pTL = topLeftOfRegion(order, level, length, origin);
+			topLeftOfRegion(order, level, length, origin, pTL);
+			setLimits(length * order, canvasWidth, canvasHeight, pTL, limits);
 			return this;
 		},
 		moveMouse: function (target) {
@@ -353,28 +347,26 @@ function startGame({
 			} while (steps.x != 0 || steps.y != 0);
 			regions[vertex.i].reselect(vertex.j);
 			mouse = target;
-			limits = limitsFrom();
-			pTL = topLeftOfRegion(order, level, length, origin);
+			topLeftOfRegion(order, level, length, origin, pTL);
+			setLimits(length * order, canvasWidth, canvasHeight, pTL, limits);
 			return this;
 		},
-		togglePaused: function () {
-			paused = !paused;
+		switchPaused: function (value = null) {
+			paused = (value == null) ? !paused : value;
 			return this;
 		},
 		recomputeLength: function ({ width, height }) {
 			paused = true;
-			displayWidth = width;
-			displayHeight = height;
+			canvasWidth = width;
+			canvasHeight = height;
 			let [tableWidth, tableHeight] = displaySetup;
 			const horizontalFit = (width - tableMargin * 2) / tableWidth;
 			const verticalFit = (height - tableMargin * 2) / tableHeight;
 			length = Math.min(horizontalFit, verticalFit) / order;
-			origin = {
-				x: (width - tableWidth * length * order) / 2,
-				y: (height - tableHeight * length * order) / 2
-			};
-			limits = limitsFrom();
-			pTL = topLeftOfRegion(order, level, length, origin);
+			origin.x = (width - tableWidth * length * order) / 2;
+			origin.y = (height - tableHeight * length * order) / 2;
+			topLeftOfRegion(order, level, length, origin, pTL);
+			setLimits(length * order, canvasWidth, canvasHeight, pTL, limits);
 			if (debugMode) {
 				const p = document.getElementById("board");
 				p.innerText = boardData(order, puzzleKey, input, length);
@@ -382,12 +374,10 @@ function startGame({
 			return this;
 		},
 		draw: function (ctx) {
-			ctx.clearRect(0, 0, displayWidth, displayHeight);
+			ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 			if (paused) {
-				mouse = {
-					x: origin.x + (level.x + 0.5) * length,
-					y: origin.y + (level.y + 0.5) * length
-				};
+				mouse.x = origin.x + (level.x + 0.5) * length;
+				mouse.y = origin.y + (level.y + 0.5) * length;
 			}
 			tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 			if (debugMode) {
@@ -415,7 +405,7 @@ function onResize(menuWidth, game, canvas, ctx) {
 function debugKeys(key, game, ctx) {
 	switch (key) {
 		case 'p':
-			game.togglePaused().draw(ctx);
+			game.switchPaused().draw(ctx);
 			break;
 		case 'o':
 			console.log(game.getInput());
@@ -450,6 +440,8 @@ function onKeyDown({ key, repeat }, game, ctx) {
 
 function onClick({ target }, games, puzzleKey, canvas, ctx) {
 	if (target.className == "thumb") {
+		document.getElementById(puzzleKey).className = "thumb";
+		target.className = "selected thumb";
 		puzzleKey = target.id;
 		games[puzzleKey].recomputeLength(canvas).draw(ctx);
 	}
@@ -476,6 +468,7 @@ function getEventHandler(canvas, menuWidth) {
 	const ctx = canvas.getContext("2d");
 	const games = Object.fromEntries(puzzleBoards.map(startGame));
 	let gameKey = puzzleBoards[0].puzzleKey;
+	document.getElementById(gameKey).className = "selected thumb";
 	return function (event) {
 		switch (event.type) {
 			case "mousemove":
@@ -488,6 +481,9 @@ function getEventHandler(canvas, menuWidth) {
 				break;
 			case "keydown":
 				onKeyDown(event, games[gameKey], ctx);
+				break;
+			case "mouseleave":
+				games[gameKey].switchPaused(true).draw(ctx);
 				break;
 			case "click":
 				gameKey = onClick(event, games, gameKey, canvas, ctx);
@@ -502,6 +498,7 @@ window.onload = function () {
 	canvas.addEventListener("mousemove", eventHandler);
 	window.addEventListener("resize", eventHandler);
 	window.addEventListener("keydown", eventHandler);
+	canvas.addEventListener("mouseleave", eventHandler);
 	window.addEventListener("click", eventHandler);
 	eventHandler({ type: "resize" });
 }
