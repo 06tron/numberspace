@@ -1,6 +1,6 @@
-const tableMargin = 50;  // make not global?
+const initialBarWidth = 300;
+const tableMargin = 50;
 const drawBound = 5;
-const initialMenuWidth = 300;
 let debugMode = 0;
 
 /**
@@ -269,6 +269,7 @@ function startGame({
 		start.linkTo(target, getDir(direct), getOri(orient));
 	});
 	let mouse = { x: 0, y: 0 };
+	let skipFrame = true;
 	let paused = true;
 	let canvasWidth;
 	let canvasHeight;
@@ -279,6 +280,8 @@ function startGame({
 	const xBox = target => Math.floor((target.x - origin.x) / length);
 	const yBox = target => Math.floor((target.y - origin.y) / length);
 	const attemptStep = startFlight(order, vertex, level);
+	const p1 = document.getElementById("board");
+	const p2 = document.getElementById("flight");
 	return [puzzleKey, {
 		overwriteInput: function (glyphIndex = -1) {
 			if (regions[vertex.i].overwrite(vertex.j, glyphIndex)) {
@@ -363,89 +366,138 @@ function startGame({
 			const horizontalFit = (width - tableMargin * 2) / tableWidth;
 			const verticalFit = (height - tableMargin * 2) / tableHeight;
 			length = Math.min(horizontalFit, verticalFit) / order;
-			origin.x = (width - tableWidth * length * order) / 2;
-			origin.y = (height - tableHeight * length * order) / 2;
+			origin.x = (width - tableWidth * length * order) * 0.5;
+			origin.y = (height - tableHeight * length * order) * 0.5;
 			topLeftOfRegion(order, level, length, origin, pTL);
 			setLimits(length * order, canvasWidth, canvasHeight, pTL, limits);
 			if (debugMode) {
-				const p = document.getElementById("board");
-				p.innerText = boardData(order, puzzleKey, input, length);
+				p1.innerText = boardData(order, puzzleKey, input, length);
 			}
 			return this;
 		},
-		draw: function (ctx) {
+		draw: function () {
+			skipFrame = false;
+			return this;
+		},
+		frame: function (ctx) {
+			if (skipFrame) {
+				return;
+			}
 			ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 			if (paused) {
 				mouse.x = origin.x + (level.x + 0.5) * length;
 				mouse.y = origin.y + (level.y + 0.5) * length;
+				tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
+				ctx.fillStyle = "rgba(255, 127, 80, 0.4)"; // coral
+				mouse.x -= 0.5 * length;
+				mouse.y -= 0.5 * length;
+				ctx.fillRect(mouse.x, mouse.y, length, length);			
+			} else {
+				tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 			}
-			tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 			if (debugMode) {
-				const p = document.getElementById("flight");
-				p.innerText = flightData(input, vertex, level, mouse);
+				p2.innerText = flightData(input, vertex, level, mouse);
 			}
+			skipFrame = true;
 		}
 	}];
 }
 
-function onMouseMove({ clientX, clientY }, menuWidth, game, ctx) {
+function onMouseMove({ clientX, clientY }, barWidth, game) {
 	const target = {
-		x: clientX - menuWidth,
+		x: clientX - barWidth,
 		y: clientY
 	};
-	game.moveMouse(target).draw(ctx);
+	game.moveMouse(target).draw();
 }
 
-function onResize(menuWidth, game, canvas, ctx) {
-	canvas.width = window.innerWidth - menuWidth;
+function onResize(barWidth, game, canvas, ctx) {
+	canvas.width = window.innerWidth - barWidth;
 	canvas.height = window.innerHeight;
-	game.recomputeLength(canvas).draw(ctx);
+	game.recomputeLength(canvas).draw().frame(ctx);
 }
 
-function debugKeys(key, game, ctx) {
+function debugKeys(key, game) {
 	switch (key) {
 		case 'p':
-			game.switchPaused().draw(ctx);
+			game.switchPaused().draw();
 			break;
 		case 'o':
 			console.log(game.getInput());
 	}
 }
 
-function onKeyDown({ key, repeat }, game, ctx) {
+function setClassName(id, classes) {
+	document.getElementById(id).className = classes;
+}
+
+function onKeyDown({ key, repeat }, game) {
 	if (repeat) {
 		return;
 	}
 	switch (key) {
 		case "Backspace":
 		case "Delete":
-			game.overwriteInput().draw(ctx);
+			game.overwriteInput().draw();
 			return;
 		case "Escape":
-			game.resetState().draw(ctx);
+			game.resetState().draw();
 			return;
 		case "F3":
 			debugMode = !debugMode;
-			document.getElementById("board").innerText = "";
-			document.getElementById("flight").innerText = "";
+			setClassName("debug", debugMode ? "info" : "hidden");
+			setClassName("about", debugMode ? "hidden" : "");
 		case ' ':
 			return;
 	}
 	if (isFinite(key)) {
-		game.overwriteInput(parseInt(key) - 1).draw(ctx);
+		game.overwriteInput(parseInt(key) - 1).draw();
 	} else if (debugMode) {
-		debugKeys(key, game, ctx);
+		debugKeys(key, game);
 	}
 }
 
-function onClick({ target }, games, puzzleKey, canvas, ctx) {
-	if (target.className == "thumb") {
-		document.getElementById(puzzleKey).className = "thumb";
-		target.className = "selected thumb";
-		puzzleKey = target.id;
-		games[puzzleKey].recomputeLength(canvas).draw(ctx);
-	}
-	return puzzleKey;
+function getGameControl() {
+	let gameKey = puzzleBoards[0].puzzleKey;
+	setClassName(gameKey, "selected thumb");
+	const games = Object.fromEntries(puzzleBoards.map(startGame));
+	return {
+		current: () => games[gameKey],
+		onClick: function({ target }, canvas) {
+			if (target.className != "thumb") {
+				return;
+			}
+			setClassName(gameKey, "thumb");
+			target.className = "selected thumb";
+			gameKey = target.id;
+			games[gameKey].recomputeLength(canvas).draw();
+		}
+	};
+}
+
+function getEventHandler(gameControl, barWidth) {
+	const canvas = document.getElementById("canvas");
+	const ctx = canvas.getContext("2d");
+	return function (event) {
+		switch (event.type) {
+			case "mousemove":
+				onMouseMove(event, barWidth, gameControl.current());
+				break;
+			case "ns_menu_resize":
+				barWidth = event.detail;
+			case "resize":
+				onResize(barWidth, gameControl.current(), canvas, ctx);
+				break;
+			case "keydown":
+				onKeyDown(event, gameControl.current());
+				break;
+			case "mouseleave":
+				gameControl.current().switchPaused(true).draw();
+				break;
+			case "click":
+				gameControl.onClick(event, canvas);
+		}
+	};
 }
 
 /**
@@ -464,41 +516,23 @@ function insertThumb({ puzzleKey, altText, isHidden }) {
 	document.getElementById("puzzles").appendChild(img);
 }
 
-function getEventHandler(canvas, menuWidth) {
-	const ctx = canvas.getContext("2d");
-	const games = Object.fromEntries(puzzleBoards.map(startGame));
-	let gameKey = puzzleBoards[0].puzzleKey;
-	document.getElementById(gameKey).className = "selected thumb";
-	return function (event) {
-		switch (event.type) {
-			case "mousemove":
-				onMouseMove(event, menuWidth, games[gameKey], ctx);
-				break; // limit number of times per second this runs?
-			case "ns_menu_resize":
-				menuWidth = event.detail;
-			case "resize":
-				onResize(menuWidth, games[gameKey], canvas, ctx);
-				break;
-			case "keydown":
-				onKeyDown(event, games[gameKey], ctx);
-				break;
-			case "mouseleave":
-				games[gameKey].switchPaused(true).draw(ctx);
-				break;
-			case "click":
-				gameKey = onClick(event, games, gameKey, canvas, ctx);
-		}
-	};
+function startAnimation(gameControl, ctx) {
+	(function animate() {
+		gameControl.current().frame(ctx);
+		window.requestAnimationFrame(animate);
+	})();
 }
 
 window.onload = function () {
 	puzzleBoards.forEach(insertThumb);
+	const gameControl = getGameControl();
+	const eventHandler = getEventHandler(gameControl, initialBarWidth);
 	const canvas = document.getElementById("canvas");
-	const eventHandler = getEventHandler(canvas, initialMenuWidth);
 	canvas.addEventListener("mousemove", eventHandler);
 	window.addEventListener("resize", eventHandler);
 	window.addEventListener("keydown", eventHandler);
 	canvas.addEventListener("mouseleave", eventHandler);
 	window.addEventListener("click", eventHandler);
 	eventHandler({ type: "resize" });
+	startAnimation(gameControl, canvas.getContext("2d"));
 }

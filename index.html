@@ -8,7 +8,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<script src="graphics/vertex_arrays.js"></script>
 	<script src="graphics/symbol_sets.js"></script>
-	<script src="puzzle/boards.js"></script>
+	<script src="puzzles/puzzle_boards.js"></script>
 	<script src="square_mesh_nav.js"></script>
 	<script src="draw_game.js"></script>
 </head>
@@ -17,13 +17,19 @@
 	<div class="game">
 		<canvas id="canvas"></canvas>
 	</div>
-	<div class="menu">
-		<h1>Number Space</h1>
-		<div id="puzzles"></div>
-	</div>
-	<div class="info">
-		<p id="flight"></p>
-		<p id="board"></p>
+	<div class="sidebar" style="width: 300px;">
+		<div class="content">
+			<h1>Number Space</h1>
+			<div id="puzzles"></div>
+			<p id="about">
+				About
+			</p>
+		</div>
+		<div id="debug" class="hidden">
+			<p id="board"></p>
+			<p id="flight"></p>
+		</div>
+		<img id="ns_heart" class="thumb" src="graphics/ns_heart.png" alt="A 1-region 1-cell space.">
 	</div>
 </body>
 

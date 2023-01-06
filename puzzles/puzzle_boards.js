@@ -23,9 +23,9 @@ const puzzleBoards = [
 		"order": 1,
 		"puzzleKey": "ns_heart",
 		"isHidden": true,
-		"displaySetup": [2, 2, 0, 0, 0],
+		"displaySetup": [2, 3, 0, 1, 0],
 		"symbolSet": symbolSets.heartSet,
-		"puzzleCells": [[1]],
+		"puzzleCells": [[0]],
 		"halfEdges": [[0, 0, 0, 7]]
 	}
 ];
