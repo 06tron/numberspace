@@ -49,3 +49,25 @@
 	white-space: pre;
 	padding-left: 40px;
 }
+
+.icon {
+	width: 20%;
+	float: left;
+}
+
+.link {
+	position: relative;
+	top: 0.5em;
+	width: 40%;
+	font-size: 0.7em;
+	color: gray;
+	float: left;
+}
+
+.left {
+	text-align: right;
+}
+
+.right {
+	text-align: left;
+}

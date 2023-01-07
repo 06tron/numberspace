@@ -1,4 +1,3 @@
-const initialBarWidth = 300;
 const tableMargin = 50;
 const drawBound = 5;
 let debugMode = 0;
@@ -463,7 +462,7 @@ function getGameControl() {
 	const games = Object.fromEntries(puzzleBoards.map(startGame));
 	return {
 		current: () => games[gameKey],
-		onClick: function({ target }, canvas) {
+		onMouseDown: function({ target }, canvas) {
 			if (target.className != "thumb") {
 				return;
 			}
@@ -475,16 +474,19 @@ function getGameControl() {
 	};
 }
 
-function getEventHandler(gameControl, barWidth) {
+function getEventHandler(gameControl) {
 	const canvas = document.getElementById("canvas");
 	const ctx = canvas.getContext("2d");
+	const barStyle = document.getElementById("bar").style;
+	let barWidth = parseInt(barStyle.width);
 	return function (event) {
 		switch (event.type) {
 			case "mousemove":
 				onMouseMove(event, barWidth, gameControl.current());
 				break;
-			case "ns_menu_resize":
+			case "ns_bar_resize":
 				barWidth = event.detail;
+				barStyle.width = `${barWidth}px`;
 			case "resize":
 				onResize(barWidth, gameControl.current(), canvas, ctx);
 				break;
@@ -494,8 +496,8 @@ function getEventHandler(gameControl, barWidth) {
 			case "mouseleave":
 				gameControl.current().switchPaused(true).draw();
 				break;
-			case "click":
-				gameControl.onClick(event, canvas);
+			case "mousedown":
+				gameControl.onMouseDown(event, canvas);
 		}
 	};
 }
@@ -526,13 +528,13 @@ function startAnimation(gameControl, ctx) {
 window.onload = function () {
 	puzzleBoards.forEach(insertThumb);
 	const gameControl = getGameControl();
-	const eventHandler = getEventHandler(gameControl, initialBarWidth);
+	const eventHandler = getEventHandler(gameControl);
 	const canvas = document.getElementById("canvas");
 	canvas.addEventListener("mousemove", eventHandler);
 	window.addEventListener("resize", eventHandler);
 	window.addEventListener("keydown", eventHandler);
 	canvas.addEventListener("mouseleave", eventHandler);
-	window.addEventListener("click", eventHandler);
+	window.addEventListener("mousedown", eventHandler);
 	eventHandler({ type: "resize" });
 	startAnimation(gameControl, canvas.getContext("2d"));
 }

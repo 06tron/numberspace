@@ -17,19 +17,35 @@
 	<div class="game">
 		<canvas id="canvas"></canvas>
 	</div>
-	<div class="sidebar" style="width: 300px;">
+	<div id="bar" class="sidebar" style="width: 300px">
 		<div class="content">
 			<h1>Number Space</h1>
 			<div id="puzzles"></div>
-			<p id="about">
-				About
-			</p>
+			<div id="about">
+				<h3>Instructions</h3>
+				<p>
+					A single cell is filled in with orange when the game is paused, and moving the mouse over the highlighted cell will resume navigation.
+					Moving the mouse away from the sudoku board will pause the game.
+					To fill in the puzzle, navigate to a white cell and press a number key to insert a digit.
+					At this point the row, column, and 3x3 region that contain the selected cell will be visible.
+					In order to solve the puzzle each of these three areas must contain all of the digits 1-9.
+					Press "backspace", "delete", or "0" to clear a cell.
+					Press "escape" to return to the starting position.
+					Click on the thumbnail images above to switch between puzzles.
+				</p>
+			</div>
 		</div>
 		<div id="debug" class="hidden">
 			<p id="board"></p>
 			<p id="flight"></p>
 		</div>
-		<img id="ns_heart" class="thumb" src="graphics/ns_heart.png" alt="A 1-region 1-cell space.">
+		<div class="content">
+			<a class="left link" target="_blank" href="https://github.com/06tron/numberspace/">Source Code</a>
+			<div class="icon">
+				<img id="ns_heart" class="thumb" src="graphics/ns_heart.png" alt="A 1-region 1-cell space.">
+			</div>
+			<a class="right link" target="_blank" href="https://06tron.github.io/">About Me</a>
+		</div>
 	</div>
 </body>
 
