@@ -48,7 +48,8 @@ function sudokuLevel(startTile, displaySetup) {
  */
 
 /**
- * 
+ * TODO: Make display object that stores displaySetup and maybe does the sudoku
+ * vertex and level constructors.
  * @param {number[]} displaySetup
  * @returns {SudokuVertex}
  */
