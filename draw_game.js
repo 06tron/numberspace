@@ -1,6 +1,5 @@
-const tableMargin = 50;
-const drawBound = 5;
-let debugMode = 0;
+const drawBound = 6;
+let debugMode = false;
 
 /**
  * Both the x and y values are integer distances measured in the side length of
@@ -280,8 +279,10 @@ function startGame({
 	const xBox = target => Math.floor((target.x - origin.x) / length);
 	const yBox = target => Math.floor((target.y - origin.y) / length);
 	const attemptStep = startFlight(order, vertex, level);
-	const p1 = document.getElementById("board");
-	const p2 = document.getElementById("flight");
+	const p1 = document.getElementById("fps");
+	const p2 = document.getElementById("board");
+	const p3 = document.getElementById("flight");
+	const frameTimes = [];
 	return [puzzleKey, {
 		overwriteInput: function (glyphIndex = -1) {
 			if (regions[vertex.i].overwrite(vertex.j, glyphIndex)) {
@@ -307,7 +308,7 @@ function startGame({
 			if (paused) {
 				paused = xBox(target) != level.x || yBox(target) != level.y;
 				mouse = target;
-				return this;
+				return !paused;
 			}
 			const steps = {
 				x: xBox(target) - xBox(mouse),
@@ -315,7 +316,7 @@ function startGame({
 			};
 			if (steps.x == 0 && steps.y == 0) {
 				mouse = target;
-				return this;
+				return true;
 			}
 			regions[vertex.i].reselect();
 			let wallsHit;
@@ -352,26 +353,26 @@ function startGame({
 			mouse = target;
 			topLeftOfRegion(order, level, length, origin, pTL);
 			setLimits(length * order, canvasWidth, canvasHeight, pTL, limits);
-			return this;
+			return true;
 		},
 		switchPaused: function (value = null) {
 			paused = (value == null) ? !paused : value;
 			return this;
 		},
-		recomputeLength: function ({ width, height }) {
+		recomputeLength: function ({ width, height }, barWidth) {
 			paused = true;
 			canvasWidth = width;
 			canvasHeight = height;
 			let [tableWidth, tableHeight] = displaySetup;
-			const horizontalFit = (width - tableMargin * 2) / tableWidth;
-			const verticalFit = (height - tableMargin * 2) / tableHeight;
+			const horizontalFit = (width - barWidth * 0.25) / tableWidth;
+			const verticalFit = (height - barWidth * 0.25) / tableHeight;
 			length = Math.min(horizontalFit, verticalFit) / order;
 			origin.x = (width - tableWidth * length * order) * 0.5;
 			origin.y = (height - tableHeight * length * order) * 0.5;
 			topLeftOfRegion(order, level, length, origin, pTL);
 			setLimits(length * order, canvasWidth, canvasHeight, pTL, limits);
 			if (debugMode) {
-				p1.innerText = boardData(order, puzzleKey, input, length);
+				p2.innerText = boardData(order, puzzleKey, input, length);
 			}
 			return this;
 		},
@@ -380,6 +381,13 @@ function startGame({
 			return this;
 		},
 		frame: function (ctx) {
+			if (debugMode) {
+				const now = performance.now();
+				while (frameTimes.length > 0 && frameTimes[0] <= now - 1000) {
+					frameTimes.shift();
+				}
+				p1.innerText = dataPoint("fps", frameTimes.length);
+			}
 			if (skipFrame) {
 				return;
 			}
@@ -396,7 +404,8 @@ function startGame({
 				tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 			}
 			if (debugMode) {
-				p2.innerText = flightData(input, vertex, level, mouse);
+				frameTimes.push(performance.now());
+				p3.innerText = flightData(input, vertex, level, mouse);
 			}
 			skipFrame = true;
 		}
@@ -408,13 +417,15 @@ function onMouseMove({ clientX, clientY }, barWidth, game) {
 		x: clientX - barWidth,
 		y: clientY
 	};
-	game.moveMouse(target).draw();
+	if (game.moveMouse(target)) {
+		game.draw();
+	}
 }
 
 function onResize(barWidth, game, canvas, ctx) {
 	canvas.width = window.innerWidth - barWidth;
 	canvas.height = window.innerHeight;
-	game.recomputeLength(canvas).draw().frame(ctx);
+	game.recomputeLength(canvas, barWidth).draw().frame(ctx);
 }
 
 function debugKeys(key, game) {
@@ -463,31 +474,31 @@ function getGameControl() {
 	const games = Object.fromEntries(puzzleBoards.map(startGame));
 	return {
 		current: () => games[gameKey],
-		onMouseDown: function({ target }, canvas) {
+		onMouseDown: function({ target }, barWidth, canvas) {
 			if (target.className != "thumb") {
 				return;
 			}
 			setClassName(gameKey, "thumb");
 			target.className = "selected thumb";
 			gameKey = target.id;
-			games[gameKey].recomputeLength(canvas).draw();
+			games[gameKey].recomputeLength(canvas, barWidth).draw();
 		}
 	};
+}
+
+function getStyleOf(selector) {
+	return window.getComputedStyle(document.querySelector(selector));
 }
 
 function getEventHandler(gameControl) {
 	const canvas = document.getElementById("canvas");
 	const ctx = canvas.getContext("2d");
-	const barStyle = document.getElementById("bar").style;
-	let barWidth = parseInt(barStyle.width);
+	let barWidth = parseInt(getStyleOf(".sidebar").width);
 	return function (event) {
 		switch (event.type) {
 			case "mousemove":
 				onMouseMove(event, barWidth, gameControl.current());
 				break;
-			case "ns_bar_resize":
-				barWidth = event.detail;
-				barStyle.width = `${barWidth}px`;
 			case "resize":
 				onResize(barWidth, gameControl.current(), canvas, ctx);
 				break;
@@ -498,7 +509,7 @@ function getEventHandler(gameControl) {
 				gameControl.current().switchPaused(true).draw();
 				break;
 			case "mousedown":
-				gameControl.onMouseDown(event, canvas);
+				gameControl.onMouseDown(event, barWidth, canvas);
 		}
 	};
 }
@@ -514,7 +525,7 @@ function insertThumb({ puzzleKey, altText, isHidden }) {
 	const img = document.createElement("img");
 	img.id = puzzleKey;
 	img.className = "thumb";
-	img.src = `graphics/${puzzleKey}.png`;
+	img.src = `graphics/images/${puzzleKey}.png`;
 	img.alt = altText;
 	document.getElementById("puzzles").appendChild(img);
 }

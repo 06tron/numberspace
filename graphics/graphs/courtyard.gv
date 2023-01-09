@@ -1,0 +1,24 @@
+graph {
+	node [group=L, shape=point]
+	4 -- 3 -- 6
+	9 -- 12 -- 15
+	node [group=C]
+	1 -- 0 -- 7
+	10 -- 13 -- 16
+	node [group=R]
+	2 -- 5 -- 8
+	11 -- 14 -- 17
+	edge [style=invis]
+	7 -- 10
+	edge [style=""]
+	{ rank=same 4 -- 1 -- 2 }
+	{ rank=same 3 0 5 }
+	{ rank=same 6 -- 7 -- 8 }
+	{ rank=same 9 -- 10 -- 11 }
+	{ rank=same 12 13 14 }
+	{ rank=same 15 -- 16 -- 17 }
+	3:e -- 13:w
+	13:e -- 5:w
+	12:e -- 0:w
+	0:e -- 14:w
+}

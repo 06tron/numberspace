@@ -1,0 +1,10 @@
+graph {
+	graph [nodesep=0.5]
+	node [shape=point]
+	0 -- 3 -- 6
+	1 -- 4 -- 7
+	2 -- 5 -- 8
+	{ rank=same 0 -- 1 -- 2 }
+	{ rank=same 3 -- 4 -- 5 }
+	{ rank=same 6 -- 7 -- 8 }
+}
