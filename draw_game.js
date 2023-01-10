@@ -13,7 +13,7 @@ let debugMode = false;
  */
 
 /**
- * 
+ * TODO: Comment this whole file.
  * @param {Tile} startTile 
  * @param {number[]} displaySetup
  * @returns {SudokuLevel}
@@ -62,18 +62,17 @@ function sudokuVertex(displaySetup) {
 }
 
 /**
- * 
- * @param {string} name 
- * @param  {...any} content 
+ * @param {string} name - A title for this data point.
+ * @param  {...any} content - The data to be converted to a string. Each
+ * argument will be placed on a new line.
  * @returns {string}
  */
 function dataPoint(name, ...content) {
-	return `${name.padStart(7, ' ')}: ${content.join("\n         ")}`;
+	return `${name.padStart(6, ' ')}: ${content.join("\n        ")}`;
 }
 
 /**
- * 
- * @param {Point}
+ * @param {Point} - A 2D point.
  * @returns {string}
  */
 function pointToString({ x, y }) {
@@ -81,7 +80,7 @@ function pointToString({ x, y }) {
 }
 
 /**
- * 
+ * @param {number[][]} input
  * @param {SudokuVertex} vertex 
  * @param {SudokuLevel} level 
  * @param {Point} mouse 
@@ -97,11 +96,18 @@ function flightData(input, vertex, level, mouse) {
 	].join("\n\n");
 }
 
+/**
+ * @param {number} order 
+ * @param {string} puzzleKey 
+ * @param {number[][]} input 
+ * @param {number} length 
+ * @returns {string}
+ */
 function boardData(order, puzzleKey, input, length) {
 	return [
 		dataPoint("order", order),
 		dataPoint("title", puzzleKey),
-		dataPoint("regions", input.length),
+		dataPoint("blocks", input.length),
 		dataPoint("length", length.toFixed(4))
 	].join("\n\n");
 }
@@ -120,7 +126,6 @@ function modulo(n, order) {
 }
 
 /**
- * 
  * @param {number} order 
  * @param {SudokuLevel} level 
  * @returns {number}
@@ -139,7 +144,6 @@ function regionIndex(order, level) {
 }
 
 /**
- * 
  * @param {number} order 
  * @param {SudokuVertex} vertex 
  * @param {SudokuLevel} level 
@@ -186,7 +190,6 @@ function startFlight(order, vertex, level) {
  */
 
 /**
- * 
  * @param {number} area 
  * @param {SymbolSet} symbolSet 
  * @returns {(cells: number[], id: number) => Region}
@@ -222,11 +225,25 @@ function createRegion(area, symbolSet) {
 	};
 }
 
+/**
+ * @param {number} order 
+ * @param {SudokuLevel} level 
+ * @param {number} length 
+ * @param {Point} origin 
+ * @param {Point} pTL 
+ */
 function topLeftOfRegion(order, level, length, origin, pTL) {
 	pTL.x = origin.x + Math.floor(level.x / order) * length * order;
 	pTL.y = origin.y + Math.floor(level.y / order) * length * order;
 }
 
+/**
+ * @param {number} len 
+ * @param {number} canvasWidth 
+ * @param {number} canvasHeight 
+ * @param {Point} pTL 
+ * @param {number[]} limits 
+ */
 function setLimits(len, canvasWidth, canvasHeight, pTL, limits) {
 	const west = pTL.x / len;
 	const north = pTL.y / len;
@@ -237,15 +254,30 @@ function setLimits(len, canvasWidth, canvasHeight, pTL, limits) {
 }
 
 /**
- * @typedef SudokuGame
- * @property {(target: Point) => SudokuGame} moveMouse
- * @property {(HTMLCanvasElement) => SudokuGame} recomputeLength
- * @property {(glyphIndex: number) => SudokuGame} overwriteInput
- * @property {(ctx: CanvasRenderingContext2D) => void} draw
+ * @typedef PuzzleBoard
+ * @property {number} order
+ * @property {string} puzzleKey
+ * @property {string} altText
+ * @property {boolean} isHidden
+ * @property {number[]} displaySetup
+ * @property {SymbolSet} symbolSet
+ * @property {number[][]} puzzleCells
+ * @property {number[][]} halfEdges
  */
 
 /**
- * length is length of box, so equal to the region length divided by order
+ * @typedef SudokuGame
+ * @property {(glyphIndex: number) => SudokuGame} overwriteInput
+ * @property {() => string} getInput
+ * @property {() => SudokuGame} resetState
+ * @property {(target: Point) => boolean} moveMouse
+ * @property {([value]: boolean) => SudokuGame} switchPaused
+ * @property {(HTMLCanvasElement, barWidth: number) => SudokuGame} recomputeLength
+ * @property {() => SudokuGame} draw
+ * @property {(ctx: CanvasRenderingContext2D) => void} frame
+ */
+
+/**
  * @param {PuzzleBoard} 
  * @returns {[string, SudokuGame]}
  */
@@ -291,7 +323,7 @@ function startGame({
 			return this;
 		},
 		getInput: () => JSON.stringify(input),
-		resetState: function () { // call this on load?
+		resetState: function () {
 			regions[vertex.i].reselect();
 			vertex.i = 0;
 			vertex.j = displaySetup[4];
@@ -412,6 +444,11 @@ function startGame({
 	}];
 }
 
+/**
+ * @param {MouseEvent}
+ * @param {number} barWidth 
+ * @param {SudokuGame} game 
+ */
 function onMouseMove({ clientX, clientY }, barWidth, game) {
 	const target = {
 		x: clientX - barWidth,
@@ -422,12 +459,22 @@ function onMouseMove({ clientX, clientY }, barWidth, game) {
 	}
 }
 
+/**
+ * @param {number} barWidth 
+ * @param {SudokuGame} game 
+ * @param {HTMLCanvasElement} canvas 
+ * @param {CanvasRenderingContext2D} ctx 
+ */
 function onResize(barWidth, game, canvas, ctx) {
 	canvas.width = window.innerWidth - barWidth;
 	canvas.height = window.innerHeight;
 	game.recomputeLength(canvas, barWidth).draw().frame(ctx);
 }
 
+/**
+ * @param {string} key 
+ * @param {SudokuGame} game 
+ */
 function debugKeys(key, game) {
 	switch (key) {
 		case 'p':
@@ -438,10 +485,18 @@ function debugKeys(key, game) {
 	}
 }
 
+/**
+ * @param {string} id 
+ * @param {string} classes 
+ */
 function setClassName(id, classes) {
 	document.getElementById(id).className = classes;
 }
 
+/**
+ * @param {KeyboardEvent}
+ * @param {SudokuGame} game
+ */
 function onKeyDown({ key, repeat }, game) {
 	if (repeat) {
 		return;
@@ -468,6 +523,15 @@ function onKeyDown({ key, repeat }, game) {
 	}
 }
 
+/**
+ * @typedef GameControl
+ * @property {() => SudokuGame} current
+ * @property {(MouseEvent, barWidth: number, canvas: HTMLCanvasElement) => void} onMouseDown
+ */
+
+/**
+ * @returns {GameControl}
+ */
 function getGameControl() {
 	let gameKey = puzzleBoards[0].puzzleKey;
 	setClassName(gameKey, "selected thumb");
@@ -486,10 +550,18 @@ function getGameControl() {
 	};
 }
 
+/**
+ * @param {string} selector 
+ * @returns {CSSStyleDeclaration}
+ */
 function getStyleOf(selector) {
 	return window.getComputedStyle(document.querySelector(selector));
 }
 
+/**
+ * @param {GameControl} gameControl 
+ * @returns {(event: UIEvent) => void}
+ */
 function getEventHandler(gameControl) {
 	const canvas = document.getElementById("canvas");
 	const ctx = canvas.getContext("2d");
@@ -515,7 +587,6 @@ function getEventHandler(gameControl) {
 }
 
 /**
- * 
  * @param {PuzzleBoard} 
  */
 function insertThumb({ puzzleKey, altText, isHidden }) {
@@ -530,6 +601,10 @@ function insertThumb({ puzzleKey, altText, isHidden }) {
 	document.getElementById("puzzles").appendChild(img);
 }
 
+/**
+ * @param {GameControl} gameControl 
+ * @param {CanvasRenderingContext2D} ctx 
+ */
 function startAnimation(gameControl, ctx) {
 	(function animate() {
 		gameControl.current().frame(ctx);

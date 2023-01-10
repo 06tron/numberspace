@@ -29,9 +29,9 @@
 				<p>
 					A single cell is filled in with orange when the game is paused.
 					Moving the mouse over this highlighted cell will resume navigation.
-					Moving the mouse away from the sudoku board will pause the game.
+					Moving the mouse away from the Sudoku board will pause the game.
 					To fill in the puzzle, navigate to a white cell and press a number key to insert a digit.
-					At this point the row, column, and 3x3 region that contain the selected cell will be visible.
+					At this point the row, column, and 3x3 block that contain the selected cell will be visible.
 					In a solved puzzle each of these three areas will contain all of the digits 1-9.
 					Press "backspace", "delete", or "0" to clear a cell.
 					Press "escape" to return to the starting position.
@@ -40,9 +40,30 @@
 				<br>
 				<h3>Explanation</h3>
 				<p>
-					Graphs
+					All of the puzzles here are displayed in the same way.
+					The visible part of the game board is simply every location that can be reached by a straight line
+					path from the current mouse position.
 				</p>
-				<!-- <img src="graphics/graphs/regular.svg" alt="None yet"> -->
+				<p>
+					The first puzzle only contains 27 cells. It can be drawn like this:
+				</p>
+				<img src="graphics/images/hallway_portals.png" alt="Drawing of a 3-block planar puzzle with portals.">
+				<p>
+					There are only three columns, and they pass through the orange portal.
+					The three rows pass through the blue portal.
+					The idea with all of these puzzles is to play normal Sudoku on a differently shaped board.
+					Consider the following graph with nine vertices:
+				</p>
+				<img src="graphics/graphs/regular.svg" alt="Graph structure for a regular Sudoku board.">
+				<p>
+					The vertices represent the 3x3 blocks of a regular Sudoku board.
+					The graph gives information about how the blocks are connected to each other.
+					Here is an analogous graph for the second puzzle, which has eighteen blocks:
+				</p>
+				<img src="graphics/graphs/courtyard.svg" alt="Graph structure for an 18-block nonplanar puzzle.">
+				<p>
+					It is essentially two regular boards that have been linked together.
+				</p>
 			</div>
 		</div>
 		<div id="debug" class="hidden">
@@ -55,7 +76,7 @@
 			<div class="icon">
 				<img id="ns_heart" class="thumb" src="graphics/images/ns_heart.png" alt="A 1-region 1-cell space.">
 			</div>
-			<a class="footer left" target="_blank" href="https://06tron.github.io/">About Me</a>
+			<a class="footer left" target="_blank" href="https://06tron.github.io/">Creator</a>
 		</div>
 	</div>
 </body>

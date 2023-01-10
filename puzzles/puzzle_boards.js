@@ -2,7 +2,7 @@ const puzzleBoards = [
 	{
 		"order": 3,
 		"puzzleKey": "hallway",
-		"altText": "A 3-region planar puzzle.",
+		"altText": "A 3-block planar puzzle.",
 		"isHidden": false,
 		"displaySetup": [4, 4, 4, 4, 4],
 		"symbolSet": symbolSets.nineDigits,
@@ -12,7 +12,7 @@ const puzzleBoards = [
 	{
 		"order": 3,
 		"puzzleKey": "courtyard",
-		"altText": "An 18-region nonplanar puzzle.",
+		"altText": "An 18-block nonplanar puzzle.",
 		"isHidden": false,
 		"displaySetup": [3, 3, 4, 4, 4],
 		"symbolSet": symbolSets.nineDigits,

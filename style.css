@@ -10,6 +10,10 @@
 	margin: 0;
 }
 
+p {
+	padding-bottom: 0.3em;
+}
+
 .game {
 	background-color: #1E1E1E;
 	float: right;
