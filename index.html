@@ -41,23 +41,26 @@
 				<h3>Explanation</h3>
 				<p>
 					All of the puzzles here are displayed in the same way.
-					The visible part of the game board is simply every location that can be reached by a straight line
+					The visible part of the game board is simply every location that can be reached via a straight line
 					path from the current mouse position.
 				</p>
 				<p>
-					The first puzzle only contains 27 cells. It can be drawn like this:
+					The first of the puzzles listed above contains exactly 27 cells.
+					It can be alternatively drawn like this:
 				</p>
 				<img src="graphics/images/hallway_portals.png" alt="Drawing of a 3-block planar puzzle with portals.">
 				<p>
 					There are only three columns, and they pass through the orange portal.
 					The three rows pass through the blue portal.
+				</p>
+				<p>
 					The idea with all of these puzzles is to play normal Sudoku on a differently shaped board.
-					Consider the following graph with nine vertices:
+					Consider this graph with nine vertices:
 				</p>
 				<img src="graphics/graphs/regular.svg" alt="Graph structure for a regular Sudoku board.">
 				<p>
 					The vertices represent the 3x3 blocks of a regular Sudoku board.
-					The graph gives information about how the blocks are connected to each other.
+					The graph gives information about how the blocks are positioned next to each other.
 					Here is an analogous graph for the second puzzle, which has eighteen blocks:
 				</p>
 				<img src="graphics/graphs/courtyard.svg" alt="Graph structure for an 18-block nonplanar puzzle.">
