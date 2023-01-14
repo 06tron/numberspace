@@ -86,13 +86,14 @@ function pointToString({ x, y }) {
  * @param {Point} mouse 
  * @returns {string}
  */
-function flightData(input, vertex, level, mouse) {
+function flightData(input, vertex, level, mouse, correctCells) {
 	return [
 		dataPoint("mouse", pointToString(mouse)),
 		dataPoint("clues", level.walk.currTile()),
 		dataPoint("input", input[vertex.i]),
 		dataPoint("vertex", vertex),
-		dataPoint("level", ...level.matrix())
+		dataPoint("level", ...level.matrix()),
+		dataPoint("filled", correctCells)
 	].join("\n\n");
 }
 
@@ -287,7 +288,9 @@ function startGame({
 	displaySetup,
 	symbolSet,
 	puzzleCells,
-	halfEdges
+	halfEdges,
+	emptyCells,
+	solution
 }) {
 	const regions = puzzleCells.map(createRegion(order * order, symbolSet));
 	const input = puzzleCells.map(regionCells => regionCells.map(x => x));
@@ -300,6 +303,8 @@ function startGame({
 		start.linkTo(target, getDir(direct), getOri(orient));
 	});
 	let mouse = { x: 0, y: 0 };
+	let correctCells = 0;
+	let solved = false;
 	let skipFrame = true;
 	let paused = true;
 	let canvasWidth;
@@ -318,7 +323,14 @@ function startGame({
 	return [puzzleKey, {
 		overwriteInput: function (glyphIndex = -1) {
 			if (regions[vertex.i].overwrite(vertex.j, glyphIndex)) {
+				if (input[vertex.i][vertex.j] == solution[vertex.i][vertex.j]) {
+					--correctCells;
+				}
+				if (glyphIndex + 1 == solution[vertex.i][vertex.j]) {
+					++correctCells;
+				}
 				input[vertex.i][vertex.j] = glyphIndex + 1;
+				solved = correctCells == emptyCells;
 			}
 			return this;
 		},
@@ -435,9 +447,16 @@ function startGame({
 			} else {
 				tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 			}
+			if (solved) {
+				ctx.strokeStyle = "coral";
+				ctx.lineWidth = 20;
+				ctx.strokeRect(0, 0, canvasWidth, canvasHeight);
+				ctx.strokeStyle = "black";
+				ctx.lineWidth = 1;
+			}
 			if (debugMode) {
 				frameTimes.push(performance.now());
-				p3.innerText = flightData(input, vertex, level, mouse);
+				p3.innerText = flightData(input, vertex, level, mouse, correctCells);
 			}
 			skipFrame = true;
 		}

@@ -38,7 +38,7 @@ p {
 
 /* For the clickable thumbnail images */
 .thumb {
-	box-shadow: 0px 0px 0px 0px;
+	box-shadow: 0 0 0 0;
 	transition: box-shadow 100ms linear;
 	margin: 5%;
 	width: 40%;
@@ -46,7 +46,7 @@ p {
 
 /* A thumbnail image becomes selected when it is clicked */
 .selected {
-	box-shadow: 0px 0px 0px 3px coral;
+	box-shadow: 0 0 0 0.2em coral;
 }
 
 .hidden {
