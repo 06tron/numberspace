@@ -17,6 +17,22 @@ const puzzleBoards = [
 	},
 	{
 		"order": 3,
+		"puzzleKey": "hallway2",
+		"altText": "A 3-block planar puzzle.",
+		"isHidden": false,
+		"displaySetup": [4, 4, 4, 4, 4],
+		"symbolSet": symbolSets.nineDigits,
+		"puzzleCells": [[5, 0, 9, 4, 8, 0, 0, 0, 0], [0, 6, 0, 0, 0, 0, 0, 9, 0], [0, 2, 0, 0, 0, 1, 0, 0, 3]],
+		"halfEdges": [[0, 1, 1, 0], [0, 1, 2, 3], [0, 2, 0, 3], [0, 2, 3, 0]],
+		"emptyCells": 18,
+		"solution": [
+			[5, 3, 9, 4, 8, 6, 2, 1, 7],
+			[1, 6, 4, 3, 7, 2, 8, 9, 5],
+			[7, 2, 8, 9, 5, 1, 6, 4, 3]
+		]
+	},
+	{
+		"order": 3,
 		"puzzleKey": "courtyard",
 		"altText": "An 18-block nonplanar puzzle.",
 		"isHidden": false,
