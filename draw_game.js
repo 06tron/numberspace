@@ -13,9 +13,10 @@ let debugMode = false;
  */
 
 /**
- * TODO: Comment this whole file.
- * @param {Tile} startTile 
- * @param {number[]} displaySetup
+ * The level property which can be represented as a matrix.
+ * @param {Tile} startTile - Needed for the internal walk object.
+ * @param {number[]} displaySetup - Contains information about the initial state
+ * of this level.
  * @returns {SudokuLevel}
  */
 function sudokuLevel(startTile, displaySetup) {
@@ -41,15 +42,15 @@ function sudokuLevel(startTile, displaySetup) {
 
 /**
  * @typedef SudokuVertex
- * @property {number} i
- * @property {number} j
+ * @property {number} i - The region/block index.
+ * @property {number} j - The cell index within a block.
  * @property {() => string} toString
  */
 
 /**
  * TODO: Make display object that stores displaySetup and maybe does the sudoku
  * vertex and level constructors.
- * @param {number[]} displaySetup
+ * @param {number[]} displaySetup - States the initial cell index.
  * @returns {SudokuVertex}
  */
 function sudokuVertex(displaySetup) {
@@ -73,18 +74,20 @@ function dataPoint(name, ...content) {
 
 /**
  * @param {Point} - A 2D point.
- * @returns {string}
+ * @returns {string} - The given point rounded to two decimal points.
  */
 function pointToString({ x, y }) {
 	return `(${x.toFixed(2)}, ${y.toFixed(2)})`;
 }
 
 /**
+ * The parameters contain the data about the player's flight.
  * @param {number[][]} input
  * @param {SudokuVertex} vertex 
  * @param {SudokuLevel} level 
  * @param {Point} mouse 
- * @returns {string}
+ * @param {number} correctCells
+ * @returns {string} - The data formatted to appear in the sidebar.
  */
 function flightData(input, vertex, level, mouse, correctCells) {
 	return [
@@ -98,11 +101,12 @@ function flightData(input, vertex, level, mouse, correctCells) {
 }
 
 /**
+ * The parameters contain the data about the current puzzle board.
  * @param {number} order 
  * @param {string} puzzleKey 
  * @param {number[][]} input 
  * @param {number} length 
- * @returns {string}
+ * @returns {string} - The data formatted to appear in the sidebar.
  */
 function boardData(order, puzzleKey, input, length) {
 	return [
@@ -127,9 +131,10 @@ function modulo(n, order) {
 }
 
 /**
- * @param {number} order 
- * @param {SudokuLevel} level 
- * @returns {number}
+ * Finds the cell index of the current vertex given the current level.
+ * @param {number} order - The block/region's order.
+ * @param {SudokuLevel} level - Contains the required placement information.
+ * @returns {number} - The cell index of the current vertex.
  */
 function regionIndex(order, level) {
 	let row = modulo(level.y, order);
@@ -145,9 +150,15 @@ function regionIndex(order, level) {
 }
 
 /**
+ * A flight is a navigation of the internal graph. It's current state has two
+ * components: the vertex and level. This function returns a function that
+ * allows for the continuation of this flight and the navigation of the board.
+ * It takes a cardinal direction and updates the flight's state to move in that
+ * direction. This returned function returns true if the game state can change,
+ * and false if there is no edge to follow in the given direction.
  * @param {number} order 
- * @param {SudokuVertex} vertex 
- * @param {SudokuLevel} level 
+ * @param {SudokuVertex} vertex - The vertex mutated by this flight.
+ * @param {SudokuLevel} level - The level mutated by this flight.
  * @returns {(directIndex: number) => boolean}
  */
 function startFlight(order, vertex, level) {
@@ -176,24 +187,42 @@ function startFlight(order, vertex, level) {
 }
 
 /**
+ * Contains all the polygons that make up the sudoku board.
  * @typedef SymbolSet
- * @property {VertexArrayPolygon[]} whiteCell
- * @property {VertexArrayPolygon[]} blueCell
- * @property {VertexArrayPolygon[]} cellBorder
- * @property {VertexArrayPolygon[][]} cellGlyph
+ * @property {VertexArrayPolygon[]} whiteCell - The white squares.
+ * @property {VertexArrayPolygon[]} blueCell - The blue squares.
+ * @property {VertexArrayPolygon[]} cellBorder - The coral borders. This is
+ * another square that is larger than the white and blue cell squares and is
+ * visible as it sits behind them.
+ * @property {VertexArrayPolygon[][]} cellGlyph - The characters that can be
+ * inserted by the player.
  */
 
 /**
+ * This is also called a block. This object controls an array of polygons which
+ * appear inside this region/block.
  * @typedef Region
- * @property {Tile} tile
- * @property {(cellIndex: number) => void} reselect
- * @property {(cellIndex: number, glyphIndex: number) => boolean} overwrite
+ * @property {Tile} tile - The underlying tile object.
+ * @property {([cellIndex]: number) => void} reselect - Removes or changes the
+ * cell border polygon. If no index is provided then no cell in this block will
+ * be selected.
+ * @property {
+ * 	(cellIndex: number, [glyphIndex]: number) => boolean
+ * } overwrite - A function to changes the glyphs present in this block. The
+ * parameters are the target cell index and the index of the glyph to put there.
+ * Returns true if this overwrite was successful, and false if the target cell
+ * contains a clue which cannot be overwritten. If no glyph index is provided,
+ * then this function attempted to clear the target cell.
  */
 
 /**
- * @param {number} area 
- * @param {SymbolSet} symbolSet 
- * @returns {(cells: number[], id: number) => Region}
+ * @param {number} area - The number of cells in these blocks. Equal to the
+ * Sudoku board's order squared.
+ * @param {SymbolSet} symbolSet - The set of polygons to be used within all of
+ * the created blocks.
+ * @returns {(cells: number[], id: number) => Region} - A function which creates
+ * a block given a unique id and an array of numbers representing the clues
+ * present in the block. Intended for use as a callback to the map function.
  */
 function createRegion(area, symbolSet) {
 	return function (cells, id) {
@@ -213,7 +242,7 @@ function createRegion(area, symbolSet) {
 					? null
 					: symbolSet.cellBorder[cellIndex];
 			},
-			overwrite: function (cellIndex, glyphIndex) {
+			overwrite: function (cellIndex, glyphIndex = -1) {
 				if (cells[cellIndex] != 0 && !debugMode) {
 					return false;
 				}
@@ -227,6 +256,8 @@ function createRegion(area, symbolSet) {
 }
 
 /**
+ * Calculates and sets the screen coordinates of a block's top left corner given
+ * many variables from an instance of a Sudoku game.
  * @param {number} order 
  * @param {SudokuLevel} level 
  * @param {number} length 
@@ -239,6 +270,8 @@ function topLeftOfRegion(order, level, length, origin, pTL) {
 }
 
 /**
+ * Calculates and sets the limits from the given variables. The limits control
+ * how far the tile tree can extend in any cardinal direction.
  * @param {number} len 
  * @param {number} canvasWidth 
  * @param {number} canvasHeight 
@@ -255,32 +288,70 @@ function setLimits(len, canvasWidth, canvasHeight, pTL, limits) {
 }
 
 /**
+ * Contains all the configurations of a single puzzle.
  * @typedef PuzzleBoard
- * @property {number} order
- * @property {string} puzzleKey
- * @property {string} altText
- * @property {boolean} isHidden
- * @property {number[]} displaySetup
- * @property {SymbolSet} symbolSet
- * @property {number[][]} puzzleCells
- * @property {number[][]} halfEdges
+ * @property {number} order - The number of cells along one edge of a block.
+ * @property {string} puzzleKey - The name of this puzzle.
+ * @property {string} altText - A short description of this puzzle.
+ * @property {boolean} isHidden - False if the puzzle should appear in a list of
+ * puzzles at the top of the side bar.
+ * @property {number[]} displaySetup - Describes which cell to select as the
+ * starting point, where that cell should be placed on the screen, and also the
+ * size of the whole puzzle on the screen.
+ * @property {SymbolSet} symbolSet - The set of polygons used in this puzzle.
+ * @property {number[][]} puzzleCells - An array of arrays, one for each block
+ * in the puzzle. The smaller arrays have a number for each cell in the block it
+ * describes. A number is nonzero if a clue should be placed at that cell. The
+ * nonzero number is one greater than the glyph index of that clue.
+ * @property {number[][]} halfEdges - An array of length four arrays. Each
+ * smaller array represents a directed edge between the blocks of this puzzle.
+ * There are two directed edges between each block in the final graph, and this
+ * array contains only one of those two for each pair of connected blocks.
+ * Suppose there are two blocks, A and B. If the edge A to B is described in
+ * this array, then the edge B to A is not described here and can be generated
+ * using the A to B edge. The label of the B to A edge is exactly the inverse of
+ * the A to B edge label.
+ * @property {number} emptyCells - The number of cells in this puzzle that do
+ * not contain a clue. If the player has inserted a number of correct answers
+ * equal to the number of empty cells, then they have solved the puzzle.
+ * @property {number[][]} solution - An array containing this puzzle's solution.
+ * Very similar to puzzleCells, except there are no zeros.
  */
 
 /**
+ * The object that allows the puzzle to be drawn and played. Most of the
+ * functions return this Sudoku game object, to allow chaining them together.
  * @typedef SudokuGame
- * @property {(glyphIndex: number) => SudokuGame} overwriteInput
- * @property {() => string} getInput
- * @property {() => SudokuGame} resetState
- * @property {(target: Point) => boolean} moveMouse
- * @property {([value]: boolean) => SudokuGame} switchPaused
- * @property {(HTMLCanvasElement, barWidth: number) => SudokuGame} recomputeLength
- * @property {() => SudokuGame} draw
- * @property {(ctx: CanvasRenderingContext2D) => void} frame
+ * @property {(glyphIndex: number) => SudokuGame} overwriteInput - Tries to
+ * insert a glyph into the current cell. Also checks to see if the player has
+ * solved the puzzle. A clue can only be overwritten in debug mode.
+ * @property {() => string} getInput - A string representation of all the glyphs
+ * on the board. This includes the clues and player inserted glyphs.
+ * @property {() => SudokuGame} resetState - Returns the player to the start of
+ * the flight. Vertex and level are reset, but player input remains unchanged.
+ * @property {(target: Point) => boolean} moveMouse - Updates the flight
+ * according to the player's mouse movement. If the game state does not change,
+ * then this function returns false. It returns true whenever the game is
+ * unpaused or becomes unpaused.
+ * @property {([value]: boolean) => SudokuGame} switchPaused - Sets the paused
+ * variable. If no boolean value is provided, then this function toggles the
+ * pause on or off.
+ * @property {
+ * 	(HTMLCanvasElement, barWidth: number) => SudokuGame
+ * } recomputeLength - Takes the height and width of the canvas, as well as the
+ * width of the side bar. The coordinate system is recalculated based on these
+ * parameters. This function should be called whenever the canvas size changes.
+ * @property {() => SudokuGame} draw - Requests a frame to be drawn.
+ * @property {(ctx: CanvasRenderingContext2D) => void} frame - Will draw the
+ * game onto the given context, unless there is no need to.
  */
 
 /**
+ * Long and not super well organized function that starts a Sudoku game from a
+ * puzzle board, and returns an object that allows the game to be played.
  * @param {PuzzleBoard} 
- * @returns {[string, SudokuGame]}
+ * @returns {[string, SudokuGame]} - A key value pair that contains the created
+ * Sudoku game object and its name.
  */
 function startGame({
 	order,
@@ -464,8 +535,10 @@ function startGame({
 }
 
 /**
+ * Calculates the canvas coordinates of the current mouse position, and requests
+ * to draw the game if the motion of the mouse changed the game state.
  * @param {MouseEvent}
- * @param {number} barWidth 
+ * @param {number} barWidth - Width of the side bar in pixels.
  * @param {SudokuGame} game 
  */
 function onMouseMove({ clientX, clientY }, barWidth, game) {
@@ -479,7 +552,9 @@ function onMouseMove({ clientX, clientY }, barWidth, game) {
 }
 
 /**
- * @param {number} barWidth 
+ * Resizes the canvas to fit the newly resized window, then updates the Sudoku
+ * game and draws it immediately.
+ * @param {number} barWidth - Width of the side bar in pixels.
  * @param {SudokuGame} game 
  * @param {HTMLCanvasElement} canvas 
  * @param {CanvasRenderingContext2D} ctx 
@@ -491,7 +566,10 @@ function onResize(barWidth, game, canvas, ctx) {
 }
 
 /**
- * @param {string} key 
+ * An extension of the onKeyDown function which performs actions only available
+ * in debug mode. Press 'p' to pause or unpause the Sudoku game. Press 'o' to
+ * log the current input array.
+ * @param {string} key - The keyboard key that has been pressed.
  * @param {SudokuGame} game 
  */
 function debugKeys(key, game) {
@@ -505,14 +583,17 @@ function debugKeys(key, game) {
 }
 
 /**
- * @param {string} id 
- * @param {string} classes 
+ * @param {string} id - The target HTML element's id.
+ * @param {string} classes - A single string containing a list of classes to
+ * assign to the target HTML element.
  */
 function setClassName(id, classes) {
 	document.getElementById(id).className = classes;
 }
 
 /**
+ * Controls keyboard actions. A held down key will only perform an action once.
+ * Press F3 to start or end debug mode.
  * @param {KeyboardEvent}
  * @param {SudokuGame} game
  */
@@ -543,12 +624,18 @@ function onKeyDown({ key, repeat }, game) {
 }
 
 /**
+ * An object to control the set of puzzles that can be played.
  * @typedef GameControl
- * @property {() => SudokuGame} current
- * @property {(MouseEvent, barWidth: number, canvas: HTMLCanvasElement) => void} onMouseDown
+ * @property {() => SudokuGame} current - Returns the currently selected game.
+ * @property {
+ * 	(MouseEvent, barWidth: number, canvas: HTMLCanvasElement) => void
+ * } onMouseDown - Allows the player to switch between puzzles by clicking on an
+ * unselected puzzle from the side bar.
  */
 
 /**
+ * Sets the current game to the first one in the puzzleBoards array. Also starts
+ * all of the games and stores them in an object.
  * @returns {GameControl}
  */
 function getGameControl() {
@@ -570,7 +657,7 @@ function getGameControl() {
 }
 
 /**
- * @param {string} selector 
+ * @param {string} selector - The target CSS class selector.
  * @returns {CSSStyleDeclaration}
  */
 function getStyleOf(selector) {
@@ -578,8 +665,10 @@ function getStyleOf(selector) {
 }
 
 /**
+ * Returns a function which handles UI events.
  * @param {GameControl} gameControl 
- * @returns {(event: UIEvent) => void}
+ * @returns {(event: UIEvent) => void} - Determines which other function to call
+ * for the given event. In case of a "mouseleave" event the current game pauses. 
  */
 function getEventHandler(gameControl) {
 	const canvas = document.getElementById("canvas");
@@ -606,6 +695,8 @@ function getEventHandler(gameControl) {
 }
 
 /**
+ * Adds the available non-hidden puzzles to the sidebar. The inserted images can
+ * be clicked on in order to switch between puzzles.
  * @param {PuzzleBoard} 
  */
 function insertThumb({ puzzleKey, altText, isHidden }) {
@@ -621,6 +712,8 @@ function insertThumb({ puzzleKey, altText, isHidden }) {
 }
 
 /**
+ * Begins the canvas animation. The current game's frame function will be called
+ * once for each animation frame.
  * @param {GameControl} gameControl 
  * @param {CanvasRenderingContext2D} ctx 
  */
