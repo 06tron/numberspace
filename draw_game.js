@@ -94,9 +94,9 @@ function flightData(input, vertex, level, mouse, correctCells) {
 		dataPoint("mouse", pointToString(mouse)),
 		dataPoint("clues", level.walk.currTile()),
 		dataPoint("input", input[vertex.i]),
+		dataPoint("filled", correctCells),
 		dataPoint("vertex", vertex),
-		dataPoint("level", ...level.matrix()),
-		dataPoint("filled", correctCells)
+		dataPoint("level", ...level.matrix())
 	].join("\n\n");
 }
 

@@ -40,9 +40,11 @@
 				<br>
 				<h3>Explanation</h3>
 				<p>
+					When using the mouse to navigate the board, it may look like the numbers are changing.
+					They are not changing, but coming into and out of view.
+					Retracing the mouse's movement will return to the previous views.
 					All of the puzzles here are displayed in the same way.
-					The visible part of the game board is simply every location that can be reached via a straight line
-					path from the current mouse position.
+					The visible part of the game board is every location that can be reached via a straight line path from the current mouse position.
 				</p>
 				<h5>Puzzle One</h5>
 				<p>
@@ -57,17 +59,17 @@
 				<h5>Puzzle Two</h5>
 				<p>
 					The idea with all of these puzzles is to play normal Sudoku on a differently shaped board.
-					Consider this graph with nine vertices:
+					Consider this network with nine nodes:
 				</p>
 				<img src="graphics/graphs/regular.svg" alt="Graph structure for a regular Sudoku board.">
 				<p>
-					The vertices represent the 3x3 blocks of a regular Sudoku board.
-					The graph gives information about how the blocks are positioned next to each other.
-					Here is an analogous graph for the second puzzle, which has eighteen blocks:
+					The nodes represent the nine 3x3 blocks of a regular Sudoku board.
+					The network connections give information about how the blocks are positioned next to each other.
+					Here is an analogous network for the second puzzle, which has eighteen blocks:
 				</p>
 				<img src="graphics/graphs/courtyard.svg" alt="Graph structure for an 18-block nonplanar puzzle.">
 				<p>
-					It is essentially two regular boards that have been linked together.
+					It is almost like two regular boards that have been linked together.
 				</p>
 			</div>
 		</div>

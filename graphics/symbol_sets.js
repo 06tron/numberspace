@@ -1,4 +1,5 @@
 const cellMargin = 15;
+const blotColors = ["#DF6873", "#CB904D", "#539B94", "#3982BB", "#745EB3"];
 
 /**
  * The verts array describes a symbol centered in the unit square.
@@ -54,7 +55,7 @@ function boardSymbols(order, borderVerts) {
  * @callback SymbolSetConstructor
  * @param {number} order
  * @param {VertexArray[]} glyphSet
- * @param {...FillStyle} styles
+ * @param {FillStyle} style
  * @returns {SymbolSet}
  */
 
@@ -70,9 +71,13 @@ function buildSetsWithOrder(...orders) {
 	});
 	const sharedSymbols = [];
 	orders.forEach(ord => sharedSymbols[ord] = boardSymbols(ord, borderVerts));
-	return function (order, glyphSet, ...styles) {
-		for (let i = styles.length; i < glyphSet.length; ++i) {
-			styles.push(styles[styles.length - 1]);
+	return function (order, glyphSet, style) {
+		glyphSet = [...glyphSet];
+		const blotCount = (order * order) - glyphSet.length;
+		const styles = new Array(glyphSet.length).fill(style);
+		for (let i = 0; i < blotCount; ++i) {
+			glyphSet.push(vertexArrays.blot)
+			styles.push(blotColors[i % 5])
 		}
 		return {
 			whiteCell: sharedSymbols[order][0],
@@ -85,10 +90,56 @@ function buildSetsWithOrder(...orders) {
 	};
 }
 
+/**
+ * @param {VertexArray} vertices 
+ * @param {number} rotate - Number of 90 degree rotations.
+ * @param {boolean} [reflect] 
+ * @returns {VertexArray[]}
+ */
+function transformVertexArray(vertices, rotate, reflect = false) {
+	let transforms = [vertices];
+	if (rotate == 1) {
+		const ninety = [];
+		for (let i = 0; i < vertices.length; i += 2) {
+			ninety.push(1 - vertices[i + 1]);
+			ninety.push(vertices[i]);
+		}
+		transforms.push(ninety);
+	}
+	if (rotate > 0) {
+		transforms = transforms.map(function (array) {
+			const oneEighty = [];
+			for (let i = 0; i < array.length; i += 2) {
+				oneEighty.push(1 - array[i]);
+				oneEighty.push(1 - array[i + 1]);
+			}
+			return oneEighty;
+		}).concat(transforms);
+	}
+	if (reflect) {
+		transforms = transforms.map(function (array) {
+			const mirror = [];
+			for (let i = 0; i < array.length; i += 2) {
+				mirror.push(1 - array[i]);
+				mirror.push(array[i + 1]);
+			}
+			return mirror;
+		}).concat(transforms);
+	}
+	return transforms;
+}
+
 const symbolSets = (function () {
-	const buildSet = buildSetsWithOrder(1, 3);
+	// const buildSet = buildSetsWithOrder(1, 3);
+	const buildSet = buildSetsWithOrder(1, 3, 9);
+	const fourThrees = transformVertexArray(vertexArrays.quantico[3], 1);
+	const eightEffs = transformVertexArray(vertexArrays.quantico[0], 1, true);
 	return {
 		heartSet: buildSet(1, [vertexArrays.snake], "black"),
-		nineDigits: buildSet(3, vertexArrays.quantico.slice(1), "black")
+		nineDigits: buildSet(3, vertexArrays.quantico.slice(1), "black"),
+		threeSet: buildSet(3, fourThrees, "black"),
+		// right, down, left (3), up, black, red, green, blue, purple
+		effSet: buildSet(3, eightEffs, "black"),
+		setTest: buildSet(9, vertexArrays.quantico.slice(1).concat(fourThrees), "black")
 	};
 })();
