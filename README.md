@@ -1,6 +1,6 @@
 # numberspace
 
-version 1.2.0 of a playable sudoku game for arbitrary board shapes
+version 1.2.1 of a playable sudoku game for arbitrary board shapes
 
 ### features
 - two puzzles of easy difficulty
