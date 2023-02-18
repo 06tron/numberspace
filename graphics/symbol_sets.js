@@ -56,6 +56,7 @@ function boardSymbols(order, borderVerts) {
  * @param {number} order
  * @param {VertexArray[]} glyphSet
  * @param {FillStyle} style
+ * @param {number[][]} [oriSet]
  * @returns {SymbolSet}
  */
 
@@ -71,21 +72,37 @@ function buildSetsWithOrder(...orders) {
 	});
 	const sharedSymbols = [];
 	orders.forEach(ord => sharedSymbols[ord] = boardSymbols(ord, borderVerts));
-	return function (order, glyphSet, style) {
-		glyphSet = [...glyphSet];
+	return function (order, glyphSet, style, oriSet = null) {
 		const blotCount = (order * order) - glyphSet.length;
 		const styles = new Array(glyphSet.length).fill(style);
+		const glyphs = [...glyphSet];
 		for (let i = 0; i < blotCount; ++i) {
-			glyphSet.push(vertexArrays.blot)
-			styles.push(blotColors[i % 5])
+			glyphs.push(vertexArrays.blot)
+			styles.push(blotColors[(glyphSet.length + i) % 5])
 		}
 		return {
 			whiteCell: sharedSymbols[order][0],
 			blueCell: sharedSymbols[order][1],
 			cellBorder: sharedSymbols[order][2],
-			cellGlyph: glyphSet.map(function (glyph, i) {
+			cellGlyph: glyphs.map(function (glyph, i) {
 				return cellSymbols(order, glyph).map(toPolygon(styles[i]));
-			})
+			}),
+			orient: function (glyphIndex, ori) {
+				if (oriSet == null) {
+					return glyphIndex;
+				}
+				if (glyphIndex < 0) {
+					return -1;
+				}
+				return (ori.negativeH
+					? ori.negativeV
+						? ori.verticalX ? oriSet[7] : oriSet[3]
+						: ori.verticalX ? oriSet[5] : oriSet[1]
+					: ori.negativeV
+						? ori.verticalX ? oriSet[6] : oriSet[2]
+						: ori.verticalX ? oriSet[4] : oriSet[0]
+				)[glyphIndex];
+			}
 		};
 	};
 }
@@ -130,16 +147,35 @@ function transformVertexArray(vertices, rotate, reflect = false) {
 }
 
 const symbolSets = (function () {
-	// const buildSet = buildSetsWithOrder(1, 3);
-	const buildSet = buildSetsWithOrder(1, 3, 9);
+	const buildSet = buildSetsWithOrder(1, 3);
 	const fourThrees = transformVertexArray(vertexArrays.quantico[3], 1);
-	const eightEffs = transformVertexArray(vertexArrays.quantico[0], 1, true);
+	let eightEffs = transformVertexArray(vertexArrays.quantico[0], 1, true);
+	eightEffs = [6, 2, 0, 4, 3, 7, 5, 1].map(i => eightEffs[i]);
 	return {
 		heartSet: buildSet(1, [vertexArrays.snake], "black"),
 		nineDigits: buildSet(3, vertexArrays.quantico.slice(1), "black"),
-		threeSet: buildSet(3, fourThrees, "black"),
+		threeSet: buildSet(3, fourThrees, "black", [
+			[0, 1, 2, 3, 4, 5, 6, 7, 8],
+			[5, 5, 5, 5, 4, 5, 6, 7, 8],
+			[5, 5, 5, 5, 4, 5, 6, 7, 8],
+			[2, 3, 0, 1, 4, 5, 6, 7, 8],
+			[5, 5, 5, 5, 4, 5, 6, 7, 8],
+			[3, 0, 1, 2, 4, 5, 6, 7, 8],
+			[1, 2, 3, 0, 4, 5, 6, 7, 8],
+			[5, 5, 5, 5, 4, 5, 6, 7, 8]
+		]),
 		// right, down, left (3), up, black, red, green, blue, purple
-		effSet: buildSet(3, eightEffs, "black"),
-		setTest: buildSet(9, vertexArrays.quantico.slice(1).concat(fourThrees), "black")
+		effSet: buildSet(3, eightEffs, "black", [
+			[0, 1, 2, 3, 4, 5, 6, 7, 8],
+			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[7, 5, 6, 4, 3, 1, 2, 0, 8]
+		]),
+// setTest: buildSet(9, vertexArrays.quantico.concat(eightEffs), "black")
+// setTest: buildSet(9, vertexArrays.quantico.concat(fourThrees), "black")
 	};
 })();
