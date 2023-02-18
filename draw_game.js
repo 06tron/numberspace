@@ -30,7 +30,7 @@ function sudokuLevel(startTile, displaySetup) {
 			const x = level.x.toString().padStart(3, ' ');
 			const b = orient.negativeV ? " -1" : "  1";
 			const y = level.y.toString().padStart(3, ' ');
-			const rows = orient.isVertical
+			const rows = orient.verticalX
 				? [`[[  0 ${a} ${x}]`, ` [${b}   0 ${y}]`]
 				: [`[[${a}   0 ${x}]`, ` [  0 ${b} ${y}]`];
 			rows.push(" [  0   0   1]]");
@@ -94,9 +94,9 @@ function flightData(input, vertex, level, mouse, correctCells) {
 		dataPoint("mouse", pointToString(mouse)),
 		dataPoint("clues", level.walk.currTile()),
 		dataPoint("input", input[vertex.i]),
+		dataPoint("filled", correctCells),
 		dataPoint("vertex", vertex),
-		dataPoint("level", ...level.matrix()),
-		dataPoint("filled", correctCells)
+		dataPoint("level", ...level.matrix())
 	].join("\n\n");
 }
 
@@ -196,6 +196,9 @@ function startFlight(order, vertex, level) {
  * visible as it sits behind them.
  * @property {VertexArrayPolygon[][]} cellGlyph - The characters that can be
  * inserted by the player.
+ * @property {(glyphIndex: number, ori: SquareSymmetry) => number} orient - A
+ * function that takes the inputted glyph index and transforms it according to
+ * the orientation of the Sudoku box the glyph is being inserted into.
  */
 
 /**
@@ -393,6 +396,7 @@ function startGame({
 	const frameTimes = [];
 	return [puzzleKey, {
 		overwriteInput: function (glyphIndex = -1) {
+			glyphIndex = symbolSet.orient(glyphIndex, level.walk.currOri());
 			if (regions[vertex.i].overwrite(vertex.j, glyphIndex)) {
 				if (input[vertex.i][vertex.j] == solution[vertex.i][vertex.j]) {
 					--correctCells;

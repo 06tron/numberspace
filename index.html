@@ -40,9 +40,11 @@
 				<br>
 				<h3>Explanation</h3>
 				<p>
+					When using the mouse to navigate the board, it may look like the numbers are changing.
+					They are not changing, but coming into and out of view.
+					Retracing the mouse's movement will return to the previous views.
 					All of the puzzles here are displayed in the same way.
-					The visible part of the game board is simply every location that can be reached via a straight line
-					path from the current mouse position.
+					The visible part of the game board is every location that can be reached via a straight line path from the current mouse position.
 				</p>
 				<h5>Puzzle One</h5>
 				<p>
@@ -57,17 +59,42 @@
 				<h5>Puzzle Two</h5>
 				<p>
 					The idea with all of these puzzles is to play normal Sudoku on a differently shaped board.
-					Consider this graph with nine vertices:
+					Consider this network with nine nodes:
 				</p>
 				<img src="graphics/graphs/regular.svg" alt="Graph structure for a regular Sudoku board.">
 				<p>
-					The vertices represent the 3x3 blocks of a regular Sudoku board.
-					The graph gives information about how the blocks are positioned next to each other.
-					Here is an analogous graph for the second puzzle, which has eighteen blocks:
+					The nodes represent the nine 3x3 blocks of a regular Sudoku board.
+					The network connections give information about how the blocks are positioned next to each other.
+					Here is an analogous network for the second puzzle, which has eighteen blocks:
 				</p>
 				<img src="graphics/graphs/courtyard.svg" alt="Graph structure for an 18-block nonplanar puzzle.">
 				<p>
-					It is essentially two regular boards that have been linked together.
+					It is almost like two regular boards that have been linked together.
+				</p>
+				<h5>Puzzle Three</h5>
+				<p>
+					Here we switch out the nine digits for another set of symbols.
+				</p>
+				<img class="symbols" src="graphics/images/threes_and_five_colors.png" alt="Symbol key for threes and five colors.">
+				<p>
+					Look at the top left block while in the starting position of this puzzle.
+					The top right block is the same as the top left, but rotated 90 degrees clockwise.
+					The middle cell of the top left block appears twice in its row.
+					This only works because the 3 becomes a different symbol when rotated.
+					Colors stay the same no matter how you look at them.
+				</p>
+				<h5>Puzzle Four</h5>
+				<p>
+					A symbol like the letter F can be rotated and reflected into eight separate Sudoku symbols.
+				</p>
+				<img class="symbols" src="graphics/images/eight_effs_and_blue.png" alt="Symbol key for eight effs and blue.">
+				<p>
+					This puzzle and the first one repeat diagonally.
+					Even though both puzzles contain only three blocks, you could walk in a straight line forever.
+					You can think of the first puzzle as existing on the surface of a cylinder.
+					Each block only appears once on this surface.
+					Then by walking diagonally you loop around the cylinder and return to where you've been before.
+					Can you imagine what sort of surface puzzle four lives on?
 				</p>
 			</div>
 		</div>

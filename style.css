@@ -44,7 +44,7 @@ h5 {
 .thumb {
 	box-shadow: 0 0 0 0;
 	transition: box-shadow 100ms linear;
-	margin: 5%;
+	margin: 5% 5% 3%;
 	width: 40%;
 }
 
@@ -86,6 +86,10 @@ h5 {
 
 .right {
 	text-align: right;
+}
+
+.symbols {
+	width: 100%;
 }
 
 .notice {
