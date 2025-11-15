@@ -148,7 +148,10 @@ function transformVertexArray(vertices, rotate, reflect = false) {
 
 const symbolSets = (function () {
 	const buildSet = buildSetsWithOrder(1, 3);
-	const fourThrees = transformVertexArray(vertexArrays.quantico[3], 1);
+	let fourThrees = transformVertexArray(vertexArrays.quantico[3], 1);
+	if (new URLSearchParams(window.location.search).get("single-color") !== null) {
+		fourThrees.push(vertexArrays.star, vertexArrays.cross, vertexArrays.x, vertexArrays.lozenge);
+	}
 	let eightEffs = transformVertexArray(vertexArrays.quantico[0], 1, true);
 	eightEffs = [6, 2, 0, 4, 3, 7, 5, 1].map(i => eightEffs[i]);
 	return {
