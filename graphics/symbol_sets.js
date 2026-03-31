@@ -154,30 +154,58 @@ const symbolSets = (function () {
 	}
 	let eightEffs = transformVertexArray(vertexArrays.quantico[0], 1, true);
 	eightEffs = [6, 2, 0, 4, 3, 7, 5, 1].map(i => eightEffs[i]);
+	let projPlane = transformVertexArray(vertexArrays.xE1, 1)
+		.concat(transformVertexArray(vertexArrays.x99, 1).slice(2))
+		.concat(transformVertexArray(vertexArrays.x33, 1).slice(2));
+	projPlane.push(vertexArrays.xFF);
+	let sphere = transformVertexArray(vertexArrays.x96, 1)
+		.concat(transformVertexArray(vertexArrays.x99, 1).slice(2))
+		.concat(transformVertexArray(vertexArrays.x55, 0, true));
+	sphere.push(vertexArrays.xFF);
 	return {
 		heartSet: buildSet(1, [vertexArrays.snake], "black"),
 		nineDigits: buildSet(3, vertexArrays.quantico.slice(1), "black"),
 		threeSet: buildSet(3, fourThrees, "black", [
 			[0, 1, 2, 3, 4, 5, 6, 7, 8],
-			[5, 5, 5, 5, 4, 5, 6, 7, 8],
-			[5, 5, 5, 5, 4, 5, 6, 7, 8],
+			[],
+			[],
 			[2, 3, 0, 1, 4, 5, 6, 7, 8],
-			[5, 5, 5, 5, 4, 5, 6, 7, 8],
-			[3, 0, 1, 2, 4, 5, 6, 7, 8],
-			[1, 2, 3, 0, 4, 5, 6, 7, 8],
-			[5, 5, 5, 5, 4, 5, 6, 7, 8]
+			[],
+			[3, 0, 1, 2, 5, 4, 6, 7, 8],
+			[1, 2, 3, 0, 5, 4, 6, 7, 8],
+			[]
 		]),
 		// right, down, left (3), up, black, red, green, blue, purple
 		effSet: buildSet(3, eightEffs, "black", [
 			[0, 1, 2, 3, 4, 5, 6, 7, 8],
-			[8, 8, 8, 8, 8, 8, 8, 8, 8],
-			[8, 8, 8, 8, 8, 8, 8, 8, 8],
-			[8, 8, 8, 8, 8, 8, 8, 8, 8],
-			[8, 8, 8, 8, 8, 8, 8, 8, 8],
-			[8, 8, 8, 8, 8, 8, 8, 8, 8],
-			[8, 8, 8, 8, 8, 8, 8, 8, 8],
+			[],
+			[],
+			[],
+			[],
+			[],
+			[],
 			[7, 5, 6, 4, 3, 1, 2, 0, 8]
 		]),
+		projPlaneSet: buildSet(3, projPlane, "black", [
+			[0, 1, 2, 3, 4, 5, 6, 7, 8],
+			[1, 0, 3, 2, 4, 5, 7, 6, 8],
+			[3, 2, 1, 0, 4, 5, 7, 6, 8],
+			[2, 3, 0, 1, 4, 5, 6, 7, 8],
+			[],
+			[],
+			[],
+			[]
+		]),
+		sphereSet: buildSet(3, sphere, "black", [
+			[0, 1, 2, 3, 4, 5, 6, 7, 8],
+			[],
+			[],
+			[2, 3, 0, 1, 4, 5, 6, 7, 8],
+			[],
+			[3, 0, 1, 2, 5, 4, 6, 7, 8],
+			[1, 2, 3, 0, 5, 4, 6, 7, 8],
+			[]
+		])
 // setTest: buildSet(9, vertexArrays.quantico.concat(eightEffs), "black")
 // setTest: buildSet(9, vertexArrays.quantico.concat(fourThrees), "black")
 	};

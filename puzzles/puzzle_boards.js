@@ -84,6 +84,52 @@ const puzzleBoards = [
 			[3, 7, 1, 9, 8, 4, 5, 2, 6]
 		]
 	},
+	{
+		"order": 3,
+		"puzzleKey": "proj-plane",
+		"altText": "A 3-block puzzle from Number Space: Two Squares.",
+		"isHidden": false,
+		"displaySetup": [4, 4, 7, 4, 4],
+		"symbolSet": symbolSets.projPlaneSet,
+		"puzzleCells": [
+			[0, 3, 0, 0, 0, 1, 6, 7, 0],
+			[0, 9, 3, 8, 0, 0, 0, 0, 1],
+			[5, 0, 0, 0, 0, 0, 3, 0, 0]
+		],
+		"halfEdges": [
+			[0, 1, 3, 1], [0, 2, 2, 0],
+			[1, 0, 1, 2], [1, 2, 0, 0]
+		],
+		"emptyCells": 17,
+		"solution": [
+			[8, 3, 5, 9, 2, 1, 6, 7, 4],
+			[7, 9, 3, 8, 5, 2, 4, 6, 1],
+			[5, 4, 2, 7, 1, 6, 3, 8, 9]
+		]
+	},
+	{
+		"order": 3,
+		"puzzleKey": "square-sphere",
+		"altText": "A 3-block puzzle from Number Space: Two Squares.",
+		"isHidden": false,
+		"displaySetup": [4, 4, 7, 4, 4],
+		"symbolSet": symbolSets.sphereSet,
+		"puzzleCells": [
+			[0, 0, 0, 0, 0, 0, 4, 5, 1],
+			[7, 0, 0, 8, 5, 9, 0, 0, 0],
+			[0, 4, 6, 0, 0, 0, 0, 9, 0]
+		],
+		"halfEdges": [
+			[0, 0, 3, 5], [0, 2, 2, 0],
+			[1, 1, 1, 6], [1, 2, 0, 0]
+		],
+		"emptyCells": 17,
+		"solution": [
+			[9, 6, 3, 7, 2, 8, 4, 5, 1],
+			[7, 3, 2, 8, 5, 9, 4, 1, 6],
+			[8, 4, 6, 3, 1, 7, 5, 9, 2]
+		]
+	},
 	// {
 	// 	"order": 9,
 	// 	"puzzleKey": "symbols",
