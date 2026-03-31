@@ -205,8 +205,8 @@ const symbolSets = (function () {
 			[3, 0, 1, 2, 5, 4, 6, 7, 8],
 			[1, 2, 3, 0, 5, 4, 6, 7, 8],
 			[]
-		])
-// setTest: buildSet(9, vertexArrays.quantico.concat(eightEffs), "black")
-// setTest: buildSet(9, vertexArrays.quantico.concat(fourThrees), "black")
+		]),
+	// setTest: buildSet(9, vertexArrays.quantico.concat(sphere).concat(projPlane).concat(fourThrees), "black")
+	// setTest: buildSet(9, vertexArrays.quantico.concat(eightEffs), "black")
 	};
 })();
