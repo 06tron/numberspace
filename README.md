@@ -1,10 +1,10 @@
 # numberspace
 
-version 1.2.1 of a playable sudoku game for arbitrary board shapes
+version 1.3.0 of a playable sudoku game for arbitrary board shapes
 
 ### features
-- two puzzles of easy difficulty
-- two puzzles of medium difficulty
+- two puzzles using the regular set of symbols for Sudoku: the digits 1-9
+- four puzzles using new symbol sets in which the symbol orientation matters
 
 ### next steps
 - give the user a way to save their progress
