@@ -626,7 +626,8 @@ function onKeyDown({ key, repeat }, game) {
 		case "Delete":
 			game.overwriteInput().draw();
 			return;
-		case "Escape":
+		case "Q":
+		case "q":
 			game.resetState().draw();
 			return;
 		case "F3":
