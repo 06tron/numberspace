@@ -1,6 +1,6 @@
 # numberspace
 
-version 1.3.0 of a playable sudoku game for arbitrary board shapes
+version 1.3.1 of a playable sudoku game for arbitrary board shapes
 
 ### features
 - two puzzles using the regular set of symbols for Sudoku: the digits 1-9
@@ -13,5 +13,4 @@ version 1.3.0 of a playable sudoku game for arbitrary board shapes
 
 ### resources
 - Google Fonts: Quantico
-- OpenType.js
 - Graphviz

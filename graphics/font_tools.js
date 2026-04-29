@@ -1,40 +1,199 @@
+/* Copyright (c) 2022-2026, Matthew Richardson
+(https://orcid.org/0009-0001-0977-2029).
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
 /**
- * Copy the raw coordinate values from this site:
- * https://opentype.js.org/glyph-inspector.html
- * @param {*} raw An array of numbers, the first two are xMin and xMax.
+ * @param {*} raw An array of numbers.
  * @returns {string} An array of 2D coordinates in string form.
  */
-function processArray(raw) {
-	const resize = raw.map(x => (x / 1400));
-	const offset = (1 - resize[1] - resize[0]) / 2;
-	const lines = [];
-	for (let i = 2; i < resize.length; i += 2) {
-		resize[i] = (resize[i] + offset).toFixed(4);
-		resize[i + 1] = (0.75 - resize[i + 1]).toFixed(4);
-		lines.push(resize[i] + ", " + resize[i + 1]);
+function processArray(raw, index) {
+	if (index == 5) {
+		const reflected = glyphs[2].map((x, i) => (i & 1) ? -x : x);
+		reflected[1] += 25;
+		return processArray(reflected);
 	}
-	lines.push(resize[2] + ", " + resize[3]);
+	if (index == 9) {
+		const rotated = glyphs[6].map(x => -x);
+		rotated[0] += 19;
+		rotated[1] += 25;
+		return processArray(rotated);
+	}
+	const resize = raw.map(x => (x / 50));
+	const lines = [];
+	resize.unshift(0.31, 0.25);
+	for (let i = 2; i < resize.length; i += 2) {
+		resize[i] += resize[i - 2];
+		resize[i + 1] += resize[i - 1];
+		lines.push(resize[i].toFixed(4) + ", " + resize[i + 1].toFixed(4));
+	}
+	lines.push(lines[0]);
 	return "[\n\t" + lines.join(",\n\t") + "\n]";
 }
 
-const digits = [
-	[80, 550, 281, 524, 271, 710, 359, 710, 349, 524, 522, 591, 550, 508, 371, 460, 487, 317, 416, 264, 315, 418, 214, 264, 143, 317, 259, 460, 80, 508, 108, 591],
-	[90, 530, 90, 490, 90, 591, 280, 700, 360, 700, 360, 90, 530, 90, 530, 0, 90, 0, 90, 90, 260, 90, 260, 588],
-	[90, 540, 190, 90, 540, 90, 540, 0, 90, 0, 90, 314, 206, 381, 440, 381, 440, 610, 190, 610, 190, 520, 90, 520, 90, 633, 206, 700, 424, 700, 540, 633, 540, 358, 424, 291, 190, 291],
-	[90, 561, 445, -5, 206, -5, 90, 62, 90, 175, 190, 175, 190, 85, 461, 85, 461, 317, 256, 317, 256, 407, 461, 407, 461, 615, 190, 615, 190, 525, 90, 525, 90, 638, 206, 705, 445, 705, 561, 638, 561, 413, 472.26, 362, 561, 311, 561, 62],
-	[40, 574, 484, 162, 484, 0, 386, 0, 386, 559.55, 144, 249, 386, 249, 386, 162, 40, 162, 40, 248, 392, 700, 484, 700, 484, 249, 574, 249, 574, 162],
-	[90, 555, 210, 610, 210, 431, 439, 431, 555, 364, 555, 62, 439, -5, 206, -5, 90, 62, 90, 175, 190, 175, 190, 85, 455, 85, 455, 341, 110, 341, 110, 700, 545, 700, 545, 610],
-	[90, 545, 190, 615, 190, 85, 445, 85, 445, 320, 190, 320, 190, 369, 261, 410, 429, 410, 545, 343, 545, 62, 429, -5, 206, -5, 90, 62, 90, 638, 206, 705, 429, 705, 545, 638, 545, 525, 445, 525, 445, 615],
-	[60, 565, 273, 0, 167, 0, 446.918, 610, 160, 610, 160, 520, 60, 520, 60, 700, 565, 700, 565, 640],
-	[90, 555, 439, -5, 206, -5, 90, 62, 190, 85, 455, 85, 455, 317, 190, 317, 190, 407, 455, 407, 455, 615, 190, 615, 190, 85, 90, 62, 90, 311, 178.74, 362, 90, 413, 90, 638, 206, 705, 439, 705, 555, 638, 555, 413, 466.26, 362, 555, 311, 555, 62],
-	[90, 545, 445, 85, 445, 615, 190, 615, 190, 380, 445, 380, 445, 331, 374, 290, 206, 290, 90, 357, 90, 638, 206, 705, 429, 705, 545, 638, 545, 62, 429, -5, 206, -5, 90, 62, 90, 175, 190, 175, 190, 85]
+// outlines for the Countico glyphs I created, inspired by Quantico
+const glyphs = [
+	[
+		2, 0,
+		15, 0,
+		0, 3,
+		-11, 0,
+		0, 7,
+		9, 0,
+		0, 3,
+		-9, 0,
+		0, 12,
+		-4, 0
+	],
+	[
+		8.625, 0,
+		2.875, 0,
+		0, 22,
+		5.625, 0,
+		0, 3,
+		-15.25, 0,
+		0, -3,
+		5.625, 0,
+		0, -18,
+		-5.625, 2.5,
+		0, -3.5
+	],
+	[
+		5.5, 0,
+		8, 0,
+		4.5, 2,
+		0, 11,
+		-4.5, 2,
+		-8.5, 0,
+		0, 7,
+		13, 0,
+		0, 3,
+		-17, 0,
+		0, -11,
+		4.5, -2,
+		8.5, 0,
+		0, -9,
+		-9, 0,
+		0, 3,
+		-4, 0,
+		0, -4
+	], 
+	[
+		5.5, 0,
+		8, 0,
+		4.5, 2,
+		0, 9,
+		-3.375, 1.5,
+		3.375, 1.5,
+		0, 9,
+		-4.5, 2,
+		-8, 0,
+		-4.5, -2,
+		0, -4,
+		4, 0,
+		0, 3,
+		9, 0,
+		0, -8,
+		-6, 0,
+		0, -3,
+		6, 0,
+		0, -8,
+		-9, 0,
+		0, 3,
+		-4, 0,
+		0, -4
+	], 
+	[
+		12, 0,
+		4, 0,
+		0, 16,
+		3, 0,
+		0, 3,
+		-3, 0,
+		0, 6,
+		-4, 0,
+		0, -19.88,
+		-8.5, 10.88,
+		8.5, 0,
+		0, 3,
+		-12, 0,
+		0, -3.64
+	],
+	null,
+	[
+		5.5, 0,
+		8, 0,
+		4.5, 2,
+		0, 4,
+		-4, 0,
+		0, -3,
+		-9, 0,
+		0, 19,
+		9, 0,
+		0, -9,
+		-9, 0,
+		0, -2,
+		2.25, -1,
+		6.25, 0,
+		4.5, 2,
+		0, 11,
+		-4.5, 2,
+		-8, 0,
+		-4.5, -2,
+		0, -21
+	],
+	[
+		0, 0,
+		19, 0,
+		0, 1.9,
+		-10.5, 23.1,
+		-4, 0,
+		10, -22,
+		-10.5, 0,
+		0, 3,
+		-4, 0
+	], 
+	[
+		5.5, 0,
+		8, 0,
+		4.5, 2,
+		0, 9,
+		-3.375, 1.5,
+		3.375, 1.5,
+		0, 9,
+		-4.5, 2,
+		-8, 0,
+		-4.5, -2,
+		0, -9,
+		3.375, -1.5,
+		-3.375, -1.5,
+		0, -8,
+		13, 0,
+		0, 19,
+		-9, 0,
+		0, -8,
+		9, 0,
+		0, -3,
+		-9, 0,
+		0, -8,
+		-4, 0,
+		0, -1
+	],
+	null
 ];
 
-const letters = [
-	[90, 499, 190, 315, 190, 0, 90, 0, 90, 700, 499, 700, 499, 610, 190, 610, 190, 405, 439, 405, 439, 315]
-]
-
-console.log(letters.map(processArray).join(",\n"));
+console.log(glyphs.map(processArray).join(",\n"));
 
 const unusedBoards = [
 	{

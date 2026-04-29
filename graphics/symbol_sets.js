@@ -164,11 +164,11 @@ function transformVertexArray(vertices, rotate, reflect = false) {
 
 const symbolSets = (function () {
 	const buildSet = buildSetsWithOrder(1, 3);
-	let fourThrees = transformVertexArray(vertexArrays.quantico[3], 1);
+	let fourThrees = transformVertexArray(vertexArrays.countico[3], 1);
 	if (new URLSearchParams(window.location.search).get("single-color") !== null) {
 		fourThrees.push(vertexArrays.star, vertexArrays.cross, vertexArrays.x, vertexArrays.lozenge);
 	}
-	let eightEffs = transformVertexArray(vertexArrays.quantico[0], 1, true);
+	let eightEffs = transformVertexArray(vertexArrays.countico[0], 1, true);
 	eightEffs = [6, 2, 0, 4, 3, 7, 5, 1].map(i => eightEffs[i]);
 	let projPlane = transformVertexArray(vertexArrays.xE1, 1)
 		.concat(transformVertexArray(vertexArrays.x99, 1).slice(2))
@@ -180,7 +180,7 @@ const symbolSets = (function () {
 	sphere.push(vertexArrays.xFF);
 	return {
 		heartSet: buildSet(1, [vertexArrays.snake], "black"),
-		nineDigits: buildSet(3, vertexArrays.quantico.slice(1), "black"),
+		nineDigits: buildSet(3, vertexArrays.countico.slice(1), "black"),
 		threeSet: buildSet(3, fourThrees, "black", [
 			[0, 1, 2, 3, 4, 5, 6, 7, 8],
 			[],
@@ -222,7 +222,7 @@ const symbolSets = (function () {
 			[1, 2, 3, 0, 5, 4, 6, 7, 8],
 			[]
 		]),
-	// setTest: buildSet(9, vertexArrays.quantico.concat(sphere).concat(projPlane).concat(fourThrees), "black")
-	// setTest: buildSet(9, vertexArrays.quantico.concat(eightEffs), "black")
+	// setTest: buildSet(9, vertexArrays.countico.concat(sphere).concat(projPlane).concat(fourThrees), "black")
+	// setTest: buildSet(9, vertexArrays.countico.concat(eightEffs), "black")
 	};
 })();

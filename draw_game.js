@@ -528,12 +528,14 @@ function startGame({
 			}
 			ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 			if (paused) {
-				mouse.x = origin.x + (level.x + 0.5) * length;
-				mouse.y = origin.y + (level.y + 0.5) * length;
+				const xMid = 0.500001;
+				const yMid = 0.500002;
+				mouse.x = origin.x + (level.x + xMid) * length;
+				mouse.y = origin.y + (level.y + yMid) * length;
 				tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
 				ctx.fillStyle = "rgba(255, 127, 80, 0.4)"; // coral
-				mouse.x -= 0.5 * length;
-				mouse.y -= 0.5 * length;
+				mouse.x -= xMid * length;
+				mouse.y -= yMid * length;
 				ctx.fillRect(mouse.x, mouse.y, length, length);			
 			} else {
 				tileTree(level.walk, pTL, mouse, length * order, limits, ctx);
